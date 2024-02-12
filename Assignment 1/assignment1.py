@@ -1,31 +1,20 @@
 import cv2
+import os
+from os import listdir
 
 def click_event(event, x, y, flags, params): 
     # checking for left mouse clicks 
     if event == cv2.EVENT_LBUTTONDOWN: 
-        # displaying the coordinates 
+        # displaying the coordinates         
         # on the Shell 
         print(x, ' ', y) 
+        return x, y
        
-def corner_detection (img):
-
-    # Find the chess board corners
-
-    # if chessboard corners are detected
-    if ret == True:
-    
-        # Draw and display the corners
-        img = cv2.drawChessboardCorners(img, (7,6), corners,ret)
-        cv2.imshow('Chessboard',img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-  
-
-
-if __name__=="__main__": 
-  
-    # reading the image 
-    img = cv2.imread('lena.jpg', 1) 
+print("h")
+# get the path/directory
+folder_dir = "C:/Users/Alex/Desktop/AI/Workspace/Computer Vision/computer_vision/Assignment 1/images"
+for image in os.listdir(folder_dir):
+    img = cv2.imread(image, 1) 
     # convert the input image to a grayscale
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     # displaying the image 
@@ -38,10 +27,9 @@ if __name__=="__main__":
     
         # wait for a key to be pressed to exit 
         cv2.waitKey(0) 
-    
         # close the window 
         cv2.destroyAllWindows() 
-
-    else :
-    
-  
+    else:
+        a = 2  
+        print("ok")      
+print("finish")
