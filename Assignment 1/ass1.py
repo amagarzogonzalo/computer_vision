@@ -5,7 +5,7 @@ corner_points = []
 chessboard_size = (6,9)
 
 
-test = cv2.imread('test2.jpeg')
+test = cv2.imread('test.jpeg')
 #grayscaled_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 img = cv2.resize(test, (0, 0), fx = 0.5, fy = 0.5)
 
@@ -30,8 +30,14 @@ def check_corner(img):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
     else:
-        print("c")
-        print("Chessboard corners not found.")
+        # setting mouse handler for the image
+        # and calling the click_event() function
+        cv2.setMouseCallback('image', click_event)
+
+        # wait for a key to be pressed to exit
+        cv2.waitKey(0)
+        # close the window
+        cv2.destroyAllWindows()
 
 check_corner(img)
 
