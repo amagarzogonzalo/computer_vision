@@ -25,7 +25,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size):
         cv2.setMouseCallback('Image', click_event)
 
 
-def interpolate_and_display_points(image, num_squares_x=7, num_squares_y=7):
+def interpolate_and_display_points(image, num_squares_x=6, num_squares_y=9):
     if len(corner_points) < 4:
         print("Insufficient points selected.")
         return
