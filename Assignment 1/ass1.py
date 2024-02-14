@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from interpolate import interpolate
+from interpolate import interpolate, reverse_again
 import os
 from os import listdir
 
@@ -38,13 +38,14 @@ def find_and_draw_chessboard_corners(image, chessboard_size):
         cv2.setMouseCallback('Image', click_event, corners)
         cv2.waitKey(0)
         corners_np = np.array(corners)
-        img2 = image
+        original_image = image
+        image_interpolated, corners_interpolated = interpolate(image, corners, chessboard_size)
+        cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners_interpolated, True)
+        see_window("Intermediate Result", image_interpolated)
 
-        image, corners_interpolated = interpolate(image, corners, chessboard_size)
-        #see_window("Interpolate", img2)
-        cv2.drawChessboardCorners(image, chessboard_size, corners_interpolated, ret)
+        final_image = reverse_again(original_image,image_interpolated, corners_interpolated, corners)
 
-        see_window("Image with linear interpolating", image)
+        see_window("Result", final_image)
 
 
 
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     chessboard_size = (6, 9)
 
     
-    folder_dir = 'images_aux2'
+    folder_dir = 'images_aux'
     current_dir = os.getcwd()
     folder_path = os.path.join(current_dir, folder_dir)
 
