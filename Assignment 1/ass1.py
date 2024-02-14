@@ -40,11 +40,11 @@ def find_and_draw_chessboard_corners(image, chessboard_size):
         corners_np = np.array(corners)
         img2 = image
 
-        img2, corners_interpolated = interpolate(image, corners, chessboard_size)
+        image, corners_interpolated = interpolate(image, corners, chessboard_size)
         #see_window("Interpolate", img2)
-        cv2.drawChessboardCorners(img2, chessboard_size, corners_interpolated, ret)
+        cv2.drawChessboardCorners(image, chessboard_size, corners_interpolated, ret)
 
-        see_window("Interpolate", img2)
+        see_window("Image with linear interpolating", image)
 
 
 
@@ -54,14 +54,13 @@ if __name__ == "__main__":
     chessboard_size = (6, 9)
 
     
-    folder_dir = 'images_aux'
+    folder_dir = 'images_aux2'
     current_dir = os.getcwd()
     folder_path = os.path.join(current_dir, folder_dir)
 
     for image in os.listdir(folder_dir):
         image_path = os.path.join(folder_path, image)
-
-        print(f"Attempting to load image from: {image_path}")
+        print(f"Attempting image: {image}")
         img = load_and_resize_image(image_path)
         find_and_draw_chessboard_corners(img, chessboard_size) 
         cv2.waitKey(0)  
