@@ -14,9 +14,8 @@ def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
 def click_event(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         #print(x, ' ', y)
-        corner_points.append((x, y))
-        cv2.circle(img, (x, y), 3, (255, 0, 0), -1)
-        cv2.imshow('Image', img)
+        #cv2.circle(img, (x, y), 3, (255, 0, 0), -1)
+        #cv2.imshow('Image', img)
         aux = x, y
         param.append(aux)
 
@@ -31,7 +30,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
     if ret:
         print("Chessboard corners found.")
         corners2 =  corners #cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
-        cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
+        cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
 
         return corners2
@@ -58,7 +57,7 @@ def draw_chessboard_corners(img, corners, chessboard_size):
     see_window("Detected Chessboard Corners", img)
 
 
-if __name__ == "__main__":
+def run(selectrun):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
@@ -68,11 +67,16 @@ if __name__ == "__main__":
     objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
     objp[:,:2]=objp[:,:2]*square_size 
 
-    
-
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)    
     
-    folder_dir = 'images_aux'
+    if selectrun == 1:
+        folder_dir = 'run_1'
+    elif selectrun == 2:
+        folder_dir = 'run_2'
+    elif selectrun == 3:
+        folder_dir = 'run_3'
+    else:
+        folder_dir = 'run_1'
     current_dir = os.getcwd()
     folder_path = os.path.join(current_dir, folder_dir)
 
@@ -88,13 +92,28 @@ if __name__ == "__main__":
             imgpoints.append(corners2)
             objpoints.append(objp)
             cv2.waitKey(0)  
+            if selectrun == 3:
+                ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
+                if ret:
+                    compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+                else:
+                    print("Error during calibration.")
             
             
         else:
-            print(f"No corners found for image {image_i}")
+            print(f"No corners found for image {image_i}.")
 
     print("Compute Error: ")
     ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
-    compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+    if ret:
+        compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+    else:
+        print("Error during calibration.")
 
     cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    #run(selectrun=1)
+    #run(selectrun=2)
+    run(selectrun=3)

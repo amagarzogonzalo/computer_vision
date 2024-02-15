@@ -1,4 +1,5 @@
 import cv2
+import numpy as np 
 
 def calibration(objpoints, imgpoints, gray):
     """
@@ -13,7 +14,22 @@ def calibration(objpoints, imgpoints, gray):
              tvecs: Translation vector
     
     """
-    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+    f_x = 0.01
+    f_y = 0.01
+    cx = gray.shape[1] / 2  
+    cy = gray.shape[0] / 2  
+    
+    mtx = np.array([[f_x, 0, cx],
+                    [0, f_y, cy],
+                    [0, 0, 1]], dtype=np.float64)
+    flags = cv2.CALIB_FIX_FOCAL_LENGTH 
+
+    modify_focal_length = False
+    if modify_focal_length:
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], mtx, flags)
+    else: 
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+
     return ret, mtx, dist, rvecs, tvecs
 
 def undistort (img, mtx, dist, image_i):
