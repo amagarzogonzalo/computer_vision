@@ -23,7 +23,7 @@ def interpolate(image, corners, chessboard_size):
 
 def reverse_again(original_image, interpolated_image, corner_interpolated, corner_original):
 
-    rows, cols, channels = interpolated_image.shape
+    rows, cols = interpolated_image.shape
     src_pts = np.float32([[0, 0], [cols, 0], [cols, rows], [0, rows]])
     dst_pts = np.float32(corner_original)
     
