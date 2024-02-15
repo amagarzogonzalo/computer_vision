@@ -30,7 +30,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
     ret, corners = cv2.findChessboardCorners(image, chessboard_size, None)
     if ret:
         print("Chessboard corners found:", corners)
-        corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        corners2 =  corners #cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
         cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
 
@@ -42,7 +42,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         cv2.setMouseCallback('Image', click_event, corners)
         cv2.waitKey(0)
         image_interpolated, corners_interpolated = interpolate(image, corners, chessboard_size)
-        corners2 = corners_interpolated #cv2.cornerSubPix(image_interpolated, corners_interpolated, (11,11), (-1,-1), criteria)
+        corners2 = corners # cv2.cornerSubPix(image_interpolated, corners_interpolated, (11,11), (-1,-1), criteria)
         cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
         final_image = reverse_again (image,image_interpolated, corners_interpolated, corners)
 
