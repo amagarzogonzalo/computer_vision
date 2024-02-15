@@ -11,6 +11,16 @@ def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
     resized_image = cv2.resize(image, (0, 0), fx=scale_x, fy=scale_y)
     return resized_image
 
+def preprocess_image(image_aux, optimize_image):
+    img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
+    if optimize_image:
+        img = cv2.GaussianBlur(img, (3, 3), 0)
+        #edges = cv2.Canny(image=blurred, threshold1=100, threshold2=200) 
+
+    return img
+
+
+
 def click_event(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         #print(x, ' ', y)
@@ -57,23 +67,23 @@ def draw_chessboard_corners(img, corners, chessboard_size):
     see_window("Detected Chessboard Corners", img)
 
 
-def run(selectrun):
+def run(select_run, optimize_image):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
     objpoints = []
     imgpoints = []
     objp = np.zeros((6*9,3), np.float32)
-    objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
+    objp[:,:2] = np.mgrid[0:6,0:9].T.reshape(-1,2)
     objp[:,:2]=objp[:,:2]*square_size 
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)    
     
-    if selectrun == 1:
+    if select_run == 1:
         folder_dir = 'run_1'
-    elif selectrun == 2:
+    elif select_run == 2:
         folder_dir = 'run_2'
-    elif selectrun == 3:
+    elif select_run == 3:
         folder_dir = 'run_3'
     else:
         folder_dir = 'run_1'
@@ -85,14 +95,14 @@ def run(selectrun):
         print(f"Attempting image: {image_i}")
         img_aux = load_and_resize_image(image_path)
         # img is gray image
-        img = cv2.cvtColor(img_aux, cv2.COLOR_BGR2GRAY)
-
+        img = preprocess_image (img_aux, optimize_image)
+       
         corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
         if corners2 is not None and len(corners2) > 0: 
             imgpoints.append(corners2)
             objpoints.append(objp)
             cv2.waitKey(0)  
-            if selectrun == 3:
+            if select_run == 3:
                 ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
                 if ret:
                     compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
@@ -114,6 +124,8 @@ def run(selectrun):
 
 
 if __name__ == "__main__":
-    #run(selectrun=1)
-    #run(selectrun=2)
-    run(selectrun=3)
+    select_run = 2
+    optimize_image = True
+    #run(select_run=1)
+    #run(select_run=2)
+    run(select_run, optimize_image)
