@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from interpolate import interpolate, reverse_again
 from calibration import calibration, undistort, compute_error
+from draw_cube import draw, draw_cube
 import os
 from os import listdir
 
@@ -73,7 +74,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
 
 
 
-def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist):
+def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     print("Online phase for Test Image:")
     test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
     img_aux = load_and_resize_image(test_image_path)
@@ -82,13 +83,11 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     if corners2 is not None and len(corners2) > 0: 
         undistort(img,mtx, dist, 'test/test_undistort.jpeg')
 
-        """ret, rvecs, tvecs = cv2.solvePnP(objp, corners2, mtx, dist)
-        if ret:
-            i#mg_with_axes_and_cube = draw_axes_and_cube(img_aux, mtx, dist, rvecs, tvecs, chessboard_size)
-            cv2.imshow('Axes and Cube', img_with_axes_and_cube)
-            cv2.waitKey(0)
-        else:
-            print("Error: Unable to estimate pose from corners.")"""
+        _,rvec,tvec,_=cv2.solvePnPRansac(objp,corners2,mtx,dist)
+        imgpts,_=cv2.projectPoints(axis,rvec,tvec,mtx,dist)
+        img = draw(im,corners,imgpts)
+        cv2.imshow('Axes and Cube', img_with_cube)
+        cv2.waitKey(0)
     else:
         print("No corners found in the test image.")
         
@@ -149,7 +148,7 @@ def run(select_run, optimize_image, kernel_params, canny_params):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist)
+            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,)
             return total_error
 
         else:
