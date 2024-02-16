@@ -78,16 +78,19 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     print("Online phase for Test Image:")
     test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
     img_aux = load_and_resize_image(test_image_path)
-    img = preprocess_image (img_aux, optimize_image, kernel_params, canny_params)   
+    img = preprocess_image (img_aux, False, kernel_params, canny_params)   
     corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
+    axis = np.float32([[0,0,0], [0,3,0], [3,3,0], [3,0,0],
+                   [0,0,-3],[0,3,-3],[3,3,-3],[3,0,-3] ])
+    
     if corners2 is not None and len(corners2) > 0: 
-        undistort(img,mtx, dist, 'test/test_undistort.jpeg')
-
         _,rvec,tvec,_=cv2.solvePnPRansac(objp,corners2,mtx,dist)
         imgpts,_=cv2.projectPoints(axis,rvec,tvec,mtx,dist)
-        img = draw(im,corners,imgpts)
-        cv2.imshow('Axes and Cube', img_with_cube)
+        img = draw_cube(img,corners2,imgpts)
+        see_window("Image with cube",img )
+        print("Online phase done.")
         cv2.waitKey(0)
+
     else:
         print("No corners found in the test image.")
         
@@ -148,7 +151,7 @@ def run(select_run, optimize_image, kernel_params, canny_params):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,)
+            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
