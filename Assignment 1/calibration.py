@@ -51,6 +51,7 @@ def undistort (img, mtx, dist, image_i):
     x, y, w, h = roi
     dst = dst[y:y+h, x:x+w]
     cv2.imwrite(image_i, dst)
+    print(f"Image undistort in {image_i}.")
 
 
 def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):

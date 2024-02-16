@@ -71,11 +71,27 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
             see_window("Result with Interpolation", final_image)
             return corners2
 
-def draw_chessboard_corners(img, corners, chessboard_size):
-    ret = 4
-    cv2.drawChessboardCorners(img, chessboard_size, corners, ret)
-    see_window("Detected Chessboard Corners", img)
 
+
+def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist):
+    print("Online phase for Test Image:")
+    test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
+    img_aux = load_and_resize_image(test_image_path)
+    img = preprocess_image (img_aux, optimize_image, kernel_params, canny_params)   
+    corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
+    if corners2 is not None and len(corners2) > 0: 
+        undistort(img,mtx, dist, 'test/test_undistort.jpeg')
+
+        """ret, rvecs, tvecs = cv2.solvePnP(objp, corners2, mtx, dist)
+        if ret:
+            i#mg_with_axes_and_cube = draw_axes_and_cube(img_aux, mtx, dist, rvecs, tvecs, chessboard_size)
+            cv2.imshow('Axes and Cube', img_with_axes_and_cube)
+            cv2.waitKey(0)
+        else:
+            print("Error: Unable to estimate pose from corners.")"""
+    else:
+        print("No corners found in the test image.")
+        
 
 def run(select_run, optimize_image, kernel_params, canny_params):
     corner_points = []
@@ -133,6 +149,7 @@ def run(select_run, optimize_image, kernel_params, canny_params):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
+            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist)
             return total_error
 
         else:
@@ -153,6 +170,6 @@ def main():
     canny_params = (375, 375)
     #run(select_run=1)
     #run(select_run=2)
-    #run(select_run, optimize_image, kernel_params, canny_params)
+    run(select_run, optimize_image, kernel_params, canny_params)
 
 main()
