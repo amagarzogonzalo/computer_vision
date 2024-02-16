@@ -11,11 +11,20 @@ def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
     resized_image = cv2.resize(image, (0, 0), fx=scale_x, fy=scale_y)
     return resized_image
 
-def preprocess_image(image_aux, optimize_image):
-    img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
+def preprocess_image(image_aux, optimize_image, kernel_params):
+    print(kernel_params)
     if optimize_image:
-        img = cv2.GaussianBlur(img, (3, 3), 0)
-        #edges = cv2.Canny(image=blurred, threshold1=100, threshold2=200) 
+        #img = cv2.GaussianBlur(img, (3, 3), 0)
+        gray = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
+
+        blurred = cv2.GaussianBlur(src=gray, ksize=(kernel_params[0][0], kernel_params[0][1]), sigmaX=kernel_params[1])
+        #img = cv2.Canny(blurred, 70, 135)
+        return blurred
+        see_window("blurred",blurred)
+        see_window("canny edge", img)
+
+    else: 
+        img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
 
     return img
 
@@ -67,7 +76,7 @@ def draw_chessboard_corners(img, corners, chessboard_size):
     see_window("Detected Chessboard Corners", img)
 
 
-def run(select_run, optimize_image):
+def run(select_run, optimize_image, kernel_params):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
@@ -85,6 +94,8 @@ def run(select_run, optimize_image):
         folder_dir = 'run_2'
     elif select_run == 3:
         folder_dir = 'run_3'
+    elif select_run == 0:
+        folder_dir = 'images_aux'
     else:
         folder_dir = 'run_1'
     current_dir = os.getcwd()
@@ -92,10 +103,10 @@ def run(select_run, optimize_image):
 
     for image_i in os.listdir(folder_dir):
         image_path = os.path.join(folder_path, image_i)
-        print(f"Attempting image: {image_i}")
+        print(f"Attempting image: {image_i}.")
         img_aux = load_and_resize_image(image_path)
         # img is gray image
-        img = preprocess_image (img_aux, optimize_image)
+        img = preprocess_image (img_aux, optimize_image, kernel_params)
        
         corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
         if corners2 is not None and len(corners2) > 0: 
@@ -116,16 +127,25 @@ def run(select_run, optimize_image):
     print("Compute Error: ")
     ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
     if ret:
-        compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+        total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+        cv2.destroyAllWindows()
+        return total_error
+
     else:
         print("Error during calibration.")
+        cv2.destroyAllWindows()
+        return 0
 
-    cv2.destroyAllWindows()
 
 
-if __name__ == "__main__":
+
+
+def main():
     select_run = 2
-    optimize_image = True
+    optimize_image = False
+    kernel_params = [(3,5),0.5]
     #run(select_run=1)
     #run(select_run=2)
-    run(select_run, optimize_image)
+    run(select_run, optimize_image, kernel_params)
+
+#main()

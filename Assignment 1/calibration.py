@@ -71,3 +71,4 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
         mean_error += error
     total_error = mean_error/len(objpoints)
     print(f"Total error: {total_error}. Mean Error: {mean_error}. Number of Object Points (Real World): {len(objpoints)} ")
+    return total_error
