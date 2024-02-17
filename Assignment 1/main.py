@@ -4,7 +4,6 @@ from interpolate import interpolate, reverse_again
 from calibration import calibration, undistort, compute_error
 from draw_cube import draw, draw_cube
 import os
-from webcam import webcam_mode
 from os import listdir
 
 
@@ -51,7 +50,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
     ret, corners = cv2.findChessboardCorners(image, chessboard_size, None)
     if ret:
         print("Chessboard corners found.")
-        corners2 =  cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        corners2 =  corners #cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
         cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
 
@@ -67,13 +66,9 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         if image_interpolated is None or corners_interpolated is None:
             return None
         else: 
-
-            final_image = reverse_again (image,image_interpolated, corners_interpolated, corners)
-
-            corners2 = cv2.cornerSubPix(final_image, corners_interpolated, (11,11), (-1,-1), criteria)
+            corners2 = corners_interpolated # cv2.cornerSubPix(image_interpolated, corners_interpolated, (11,11), (-1,-1), criteria)
             cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
             final_image = reverse_again (image,image_interpolated, corners_interpolated, corners)
-            print("Corners manual: ", corners)
 
             see_window("Result with Interpolation", final_image)
             return corners2
@@ -106,8 +101,7 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     else:
         print("No corners found in the test image.")
 
-def run(select_run, optimize_image, kernel_params, canny_params, webcam):
-    
+def run(select_run, optimize_image, kernel_params, canny_params):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
@@ -119,17 +113,14 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam):
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)    
     
-    if webcam == 1:
-        folder_dir = 'webcam'
-        webcam_mode()
-    elif select_run == 1:
+    if select_run == 1:
         folder_dir = 'run_1'
     elif select_run == 2:
         folder_dir = 'run_2'
     elif select_run == 3:
         folder_dir = 'run_3'
     elif select_run == 0:
-        folder_dir = 'images_aux2'
+        folder_dir = 'images_aux'
     else:
         folder_dir = 'run_1'
     current_dir = os.getcwd()
@@ -182,12 +173,11 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam):
 
 def main():
     select_run = 0
-    webcam = 1
     optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)
     #run(select_run=2)
-    run(select_run, optimize_image, kernel_params, canny_params, webcam)
+    run(select_run, optimize_image, kernel_params, canny_params)
 
 main()
