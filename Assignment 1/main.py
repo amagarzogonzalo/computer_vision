@@ -5,6 +5,7 @@ from calibration import calibration, undistort, compute_error
 from draw_cube import draw, draw_cube
 import os
 from os import listdir
+from webcam import webcam_mode
 
 
 def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
@@ -101,7 +102,7 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     else:
         print("No corners found in the test image.")
 
-def run(select_run, optimize_image, kernel_params, canny_params):
+def run(select_run, optimize_image, kernel_params, canny_params, webcam):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
@@ -113,7 +114,10 @@ def run(select_run, optimize_image, kernel_params, canny_params):
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)    
     
-    if select_run == 1:
+    if webcam == 1:
+        webcam_mode()
+        folder_dir = 'webcam'
+    elif select_run == 1:
         folder_dir = 'run_1'
     elif select_run == 2:
         folder_dir = 'run_2'
@@ -173,11 +177,12 @@ def run(select_run, optimize_image, kernel_params, canny_params):
 
 def main():
     select_run = 0
+    webcam = 1
     optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)
     #run(select_run=2)
-    run(select_run, optimize_image, kernel_params, canny_params)
+    run(select_run, optimize_image, kernel_params, canny_params, webcam)
 
 main()
