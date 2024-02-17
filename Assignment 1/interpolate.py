@@ -41,4 +41,5 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
     
     result = cv2.add(original_bg, warped_fg)
     
+    
     return result
