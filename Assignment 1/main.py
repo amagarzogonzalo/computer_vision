@@ -24,7 +24,8 @@ def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds)
         see_window("blurred",blurred)
         see_window("canny edge", img)
 
-    else: 
+    else:
+        #return image_aux
         img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
 
     return img
@@ -78,22 +79,27 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     print("Online phase for Test Image:")
     test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
     img_aux = load_and_resize_image(test_image_path)
-    img = preprocess_image (img_aux, False, kernel_params, canny_params)   
-    corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
-    axis = np.float32([[0,0,0], [0,3,0], [3,3,0], [3,0,0],
-                   [0,0,-3],[0,3,-3],[3,3,-3],[3,0,-3] ])
-    
-    if corners2 is not None and len(corners2) > 0: 
-        _,rvec,tvec,_=cv2.solvePnPRansac(objp,corners2,mtx,dist)
-        imgpts,_=cv2.projectPoints(axis,rvec,tvec,mtx,dist)
-        img = draw_cube(img,corners2,imgpts)
-        see_window("Image with cube",img )
+    img = preprocess_image (img_aux, False, kernel_params, canny_params)
+    corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria)
+    square_size = 21  # Size of a chessboard square in mm
+    axis = np.float32([
+        [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],  # Base
+        [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
+        [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
+    ])
+
+    if corners2 is not None and len(corners2) > 0:
+        _, rvec, tvec, _ = cv2.solvePnPRansac(objp, corners2, mtx, dist)
+        imgpts, _ = cv2.projectPoints(axis, rvec, tvec, mtx, dist)
+        color_image = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        color_image = draw_cube(color_image, corners2, imgpts)
+        color_image = draw(color_image, corners2, imgpts)
+        see_window("Image with cube and axis lines", color_image)
         print("Online phase done.")
         cv2.waitKey(0)
 
     else:
         print("No corners found in the test image.")
-        
 
 def run(select_run, optimize_image, kernel_params, canny_params):
     corner_points = []
@@ -166,8 +172,8 @@ def run(select_run, optimize_image, kernel_params, canny_params):
 
 
 def main():
-    select_run = 2
-    optimize_image = True
+    select_run = 0
+    optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)
