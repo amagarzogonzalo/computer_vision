@@ -5,6 +5,14 @@ import numpy as np
 # For this purpose, several kernel sizes are attempted as well as the sigma x in order to find the optimal combination
 
 def parameters_canny():
+    """
+    Optimize canny thresholds for image processing.
+
+    This function iterates over different combinations of canny's thresholds 
+    to find the best parameters for a specific image processing task.
+
+    :return: The best thresholds and the corresponding error.
+    """
     threshold_first = np.linspace(300,600, 5)
     threshold_second = np.linspace(300,600, 5)
     best_error = None
@@ -26,6 +34,14 @@ def parameters_canny():
 
 
 def kernel_parameters():
+    """
+    Optimize kernel parameters for image processing.
+
+    This function iterates over different combinations of kernel sizes and sigma values 
+    to find the best parameters for a specific image processing task.
+
+    :return: The best kernel parameters and the corresponding error.
+    """
     ksize_first = [3, 5, 7]
     ksize_second = [3, 5, 7]
     sigma_x = [0, 0.5, 0.7]

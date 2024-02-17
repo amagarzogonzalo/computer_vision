@@ -5,6 +5,8 @@ from threading import Thread
 
 
 def webcam_mode():
+    """Webcam mode that allows us to saving images by pressing spaceba,
+      and terminates by pressing enter (pressing any other key continues displaying frames until termination)."""
     cam=cv2.VideoCapture(0)
     i=1
     while True:
