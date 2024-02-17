@@ -1,20 +1,26 @@
 import cv2
+import os
 from threading import Thread
   #https://rdmilligan.wordpress.com/2015/06/28/opencv-camera-calibration-and-pose-estimation-using-python/
-class Webcam:
-  
-    def __init__(self):
-        self.video_capture = cv2.VideoCapture(0)
-        self.current_frame = self.video_capture.read()[1]
-          
-    # create thread for capturing images
-    def start(self):
-        Thread(target=self._update_frame, args=()).start()
-  
-    def _update_frame(self):
-        while(True):
-            self.current_frame = self.video_capture.read()[1]
-                  
-    # get the current frame
-    def get_current_frame(self):
-        return self.current_frame
+
+
+def webcam_mode():
+    cam=cv2.VideoCapture(0)
+    i=1
+    while True:
+        hasframe,frame=cam.read()
+        if hasframe==False:
+            break    
+        cv2.imshow('Output',frame)
+        if cv2.waitKey(1)==13:
+            break
+        elif cv2.waitKey(32)==ord(' '):
+            filename = os.path.join("webcam", str(i) + '.jpg')
+
+            cv2.imwrite(filename,frame)
+            i+=1
+            print('Captured')
+        else:
+            continue
+    cv2.destroyAllWindows()
+    cam.release()
