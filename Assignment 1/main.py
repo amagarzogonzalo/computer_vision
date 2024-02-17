@@ -77,7 +77,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
 
 def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     print("Online phase for Test Image:")
-    test_image_path = os.path.join(os.getcwd(), 'test', 'IMG20.jpg')
+    test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
     img_aux = load_and_resize_image(test_image_path)
     img = preprocess_image (img_aux, False, kernel_params, canny_params)
     corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria)
@@ -97,6 +97,9 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
         see_window("Image with cube and axis lines", color_image)
         print("Online phase done.")
         cv2.waitKey(0)
+
+    else:
+        print("No corners found in the test image.")
 
 def run(select_run, optimize_image, kernel_params, canny_params):
     corner_points = []

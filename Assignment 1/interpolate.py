@@ -2,6 +2,14 @@ import cv2
 import numpy as np
 
 def interpolate(image, corners, chessboard_size):
+    """
+    Perform perspective transformation on the input image based on the detected corners of a chessboard.
+
+    :param image: The input image.
+    :param corners: The detected corners of the chessboard.
+    :param chessboard_size: Size of the chessboard (rows, cols).
+    :return: The transformed image and the new corners in the transformed image.
+    """
     corners_np = np.float32(corners)
     width, height = 600,600
     dst_points = np.array([[0, 0], [width, 0], [width, height], [0, height]], dtype="float32")
@@ -22,7 +30,15 @@ def interpolate(image, corners, chessboard_size):
     
 
 def reverse_again(original_image, interpolated_image, corner_interpolated, corner_original):
+    """
+    Reverse the perspective transformation applied to the interpolated image and overlay it onto the original image.
 
+    :param original_image: The original image.
+    :param interpolated_image: The image after perspective transformation.
+    :param corner_interpolated: The corners of the interpolated image.
+    :param corner_original: The corners of the original image.
+    :return: The overlaid image.
+    """
     rows, cols = interpolated_image.shape
     src_pts = np.float32([[0, 0], [cols, 0], [cols, rows], [0, rows]])
     dst_pts = np.float32(corner_original)
@@ -40,5 +56,6 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
     warped_fg = cv2.bitwise_and(warped_image, warped_image, mask=mask)
     
     result = cv2.add(original_bg, warped_fg)
+    
     
     return result
