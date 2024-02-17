@@ -30,9 +30,9 @@ def draw(img, corners, imgpts):
     z_axis_end = tuple(imgpts[3].ravel().astype(int))
 
     # Draw the lines for the X, Y, Z axes
-    img = cv2.line(img, origin, x_axis_end, (0, 0, 255), 5)  # X-axis in red
-    img = cv2.line(img, origin, y_axis_end, (0, 255, 0), 5)  # Y-axis in green
-    img = cv2.line(img, origin, z_axis_end, (255, 0, 0), 5)  # Z-axis in blue
+    img = cv2.line(img, corners, x_axis_end, (0, 0, 255), 5)  # X-axis in red
+    img = cv2.line(img, corners, y_axis_end, (0, 255, 0), 5)  # Y-axis in green
+    img = cv2.line(img, corners, z_axis_end, (255, 0, 0), 5)  # Z-axis in blue
     return img
 '''
 

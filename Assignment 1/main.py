@@ -6,6 +6,7 @@ from draw_cube import draw, draw_cube
 import os
 from os import listdir
 from webcam import webcam_mode
+from video import video_mode
 
 
 def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
@@ -14,6 +15,7 @@ def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
     return resized_image
 
 def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
+
     #print(canny_thresholds)
     if optimize_image:
         gray = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
@@ -30,8 +32,6 @@ def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds)
         img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
 
     return img
-
-
 
 def click_event(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
@@ -75,7 +75,6 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
             return corners2
 
 
-
 def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     print("Online phase for Test Image:")
     test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
@@ -102,7 +101,7 @@ def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, c
     else:
         print("No corners found in the test image.")
 
-def run(select_run, optimize_image, kernel_params, canny_params, webcam):
+def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
@@ -110,10 +109,10 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam):
     imgpoints = []
     objp = np.zeros((6*9,3), np.float32)
     objp[:,:2] = np.mgrid[0:6,0:9].T.reshape(-1,2)
-    objp[:,:2]=objp[:,:2]*square_size 
+    objp[:,:2]=objp[:,:2]*square_size
 
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)    
-    
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
     if webcam == 1:
         webcam_mode()
         folder_dir = 'webcam'
@@ -149,8 +148,16 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam):
                     compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
                 else:
                     print("Error during calibration.")
-            
-            
+        if corners2 is not None and len(corners2) > 0 and video == 1:
+
+            axis = np.float32([
+                [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],# Base
+                [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
+                [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
+            ])
+            ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
+            video_mode(mtx, dist, objp, axis)
+
         else:
             print(f"No corners found for image {image_i}.")
             fail = True
@@ -171,18 +178,15 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam):
     else:
         return 0
 
-
-
-
-
 def main():
     select_run = 0
-    webcam = 1
+    webcam = 0
+    video = 1
     optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)
     #run(select_run=2)
-    run(select_run, optimize_image, kernel_params, canny_params, webcam)
+    run(select_run, optimize_image, kernel_params, canny_params, webcam, video)
 
 main()
