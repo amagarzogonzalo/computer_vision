@@ -44,7 +44,7 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
     :param interpolated_image: The image after perspective transformation.
     :param corner_interpolated: The corners of the interpolated image.
     :param corner_original: The corners of the original image.
-    :return: The overlaid image.
+    :return: The overlaid image and the corners.
     """
     rows, cols = interpolated_image.shape
     src_pts = np.float32([[0, 0], [cols, 0], [cols, rows], [0, rows]])
@@ -64,7 +64,7 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
 
     result = cv2.add(original_bg, warped_fg)
 
-    print(corner_original, corner_interpolated)
+    #print(corner_original, corner_interpolated)
     rows, cols = interpolated_image.shape[:2]
     corner_original = np.array(corner_original)
     corner_interpolated = np.array(corner_interpolated)
@@ -83,7 +83,7 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
     scaled_points = np.array(scaled_points)
     scaled_points = scaled_points.reshape(-1, 1, 2)
 
-    print(scaled_points.shape, corner_interpolated.shape)
+    #print(scaled_points.shape, corner_interpolated.shape)
     sorted_indices = np.argsort(scaled_points[:, 0, 1])
     sorted_scaled_points = scaled_points[sorted_indices]
 

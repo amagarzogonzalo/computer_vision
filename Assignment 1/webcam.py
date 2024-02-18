@@ -1,9 +1,6 @@
 import cv2
 import os
 from threading import Thread
-  #https://rdmilligan.wordpress.com/2015/06/28/opencv-camera-calibration-and-pose-estimation-using-python/
-
-
 
 
 def webcam_mode():

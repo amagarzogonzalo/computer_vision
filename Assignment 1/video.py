@@ -7,6 +7,14 @@ import os
 from os import listdir
 
 def video_mode(mtx, dist, objp, axis):
+    """
+    This function captures video from a camera, detects a chessboard pattern in each frame, and overlays a 3D cube on the detected chessboard.
+
+    :param mtx: The camera matrix.
+    :param dist: The distortion coefficients.
+    :param objp: The object points representing the 3D corners of the chessboard.
+    :param axis: The axis points representing the 3D cube to overlay on the chessboard.
+    """
     cam = cv2.VideoCapture(0)
     out = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (int(cam.get(3)), int(cam.get(4))))
 

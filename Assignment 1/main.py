@@ -9,13 +9,29 @@ from webcam import webcam_mode
 from video import video_mode
 
 
-def load_and_resize_image(image_path, scale_x=0.9, scale_y=0.9):
+def load_and_resize_image(image_path, scale_x=1, scale_y=1):
+    """
+    Load an image from the given path and resize it.
+
+    :param image_path: The path to the image file.
+    :param scale_x: Scaling factor along the x-axis.
+    :param scale_y: Scaling factor along the y-axis.
+    :return: The resized image.
+    """
     image = cv2.imread(image_path)
     resized_image = cv2.resize(image, (0, 0), fx=scale_x, fy=scale_y)
     return resized_image
 
 def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
+    """
+    Preprocess the input image based on the specified parameters.
 
+    :param image_aux: The input image.
+    :param optimize_image: Flag indicating whether to optimize the image.
+    :param kernel_params: Parameters for the Gaussian blur kernel (size and sigma).
+    :param canny_thresholds: Thresholds for Canny edge detection.
+    :return: The preprocessed image.
+    """
     #print(canny_thresholds)
     if optimize_image:
         gray = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
@@ -34,6 +50,15 @@ def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds)
     return img
 
 def click_event(event, x, y, flags, param):
+    """
+    Handle mouse click events.
+
+    :param event: The type of mouse event.
+    :param x: The x-coordinate of the mouse click.
+    :param y: The y-coordinate of the mouse click.
+    :param flags: Any flags passed with the event.
+    :param param: Additional parameters passed to the function.
+    """
     if event == cv2.EVENT_LBUTTONDOWN:
         #print(x, ' ', y)
         #cv2.circle(img, (x, y), 3, (255, 0, 0), -1)
@@ -42,12 +67,25 @@ def click_event(event, x, y, flags, param):
         param.append(aux)
 
 def see_window(window_name, image):
-    # See the image completely (resize the window)
+    """
+    Display an image in a resizable window.
+
+    :param window_name: The name of the window.
+    :param image: The image to be displayed.
+    """
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL) 
     cv2.resizeWindow(window_name, 650, 650) 
     cv2.imshow(window_name, image)
 
 def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
+    """
+    Find and draw chessboard corners on the image.
+
+    :param image: The input image.
+    :param chessboard_size: Size of the chessboard (rows, cols).
+    :param criteria: Criteria for corner refinement.
+    :return: The refined corners.
+    """
     ret, corners = cv2.findChessboardCorners(image, chessboard_size, None)
     if ret:
         print("Chessboard corners found.")
@@ -77,6 +115,21 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
 
 
 def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
+    """
+    Perform the online phase for a test image.
+
+    :param img: The test image.
+    :param optimize_image: Flag indicating whether to optimize the image.
+    :param kernel_params: Parameters for the Gaussian blur kernel (size and sigma).
+    :param canny_params: Thresholds for Canny edge detection.
+    :param chessboard_size: Size of the chessboard (rows, cols).
+    :param criteria: Criteria for corner refinement.
+    :param mtx: The camera matrix.
+    :param dist: The distortion coefficients.
+    :param rvecs: Rotation vectors.
+    :param tvecs: Translation vectors.
+    :param objp: The object points representing the 3D corners of the chessboard.
+    """
     print("Online phase for Test Image:")
     #test_image_path = os.path.join(os.getcwd(), 'test', 'IMG20.jpg')
     #img_aux = load_and_resize_image(test_image_path)
@@ -112,6 +165,16 @@ def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_siz
         print("No corners found in the test image.")
 
 def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
+    """
+    Run the calibration process.
+
+    :param select_run: The selected run number.
+    :param optimize_image: Flag indicating whether to optimize the image.
+    :param kernel_params: Parameters for the Gaussian blur kernel (size and sigma).
+    :param canny_params: Thresholds for Canny edge detection.
+    :param webcam: Flag indicating whether to use webcam mode.
+    :param video: Flag indicating whether to record a video.
+    """
     corner_points = []
     chessboard_size = (6, 9)
     square_size = 22
