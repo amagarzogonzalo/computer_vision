@@ -78,24 +78,30 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
 
 def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     print("Online phase for Test Image:")
-    test_image_path = os.path.join(os.getcwd(), 'test', 'test.jpeg')
+    test_image_path = os.path.join(os.getcwd(), 'test', 'IMG20.jpg')
     img_aux = load_and_resize_image(test_image_path)
     img = preprocess_image (img_aux, False, kernel_params, canny_params)
     corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria)
     square_size = 21  # Size of a chessboard square in mm
+    #for cube line axis
     axis = np.float32([
         [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],  # Base
         [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
         [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
     ])
+    #for axis lines
+    axis2 = np.float32([[0,0,0],[square_size*3,0,0],[0,square_size*3,0],[0,0,square_size*-3]])
 
     if corners2 is not None and len(corners2) > 0:
         _, rvec, tvec, _ = cv2.solvePnPRansac(objp, corners2, mtx, dist)
         imgpts, _ = cv2.projectPoints(axis, rvec, tvec, mtx, dist)
+        imgpts2, _ = cv2.projectPoints(axis2,rvec,tvec,mtx,dist)
         color_image = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         color_image = draw_cube(color_image, corners2, imgpts)
-        color_image = draw(color_image, corners2, imgpts)
+        color_image = draw(color_image, corners2, imgpts2)
         see_window("Image with cube and axis lines", color_image)
+        #print(f'imgpts: {imgpts}')
+        #print(f'imgpts: {imgpts2}')
         print("Online phase done.")
         cv2.waitKey(0)
 
@@ -158,6 +164,8 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
                 ])
                 video_mode(mtx, dist, objp, axis)
 
+
+
         else:
             print(f"No corners found for image {image_i}.")
             fail = True
@@ -168,7 +176,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            #online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
+            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
@@ -179,10 +187,10 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         return 0
 
 def main():
-    select_run = 0
+    select_run = 3
     webcam = 0
-    video = 0
-    optimize_image = True
+    video = 1
+    optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)

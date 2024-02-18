@@ -15,7 +15,7 @@ def video_mode(mtx, dist, objp, axis):
         if hasframe==False:
             break
         gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-        ret,corners = cv2.findChessboardCorners(gray,(9,6),None)
+        ret,corners = cv2.findChessboardCorners(gray,(6,9),None)
         if ret == True:
             _,rvec,tvec,_=cv2.solvePnPRansac(objp,corners,mtx,dist)
             imgpts,_=cv2.projectPoints(axis,rvec,tvec,mtx,dist)
