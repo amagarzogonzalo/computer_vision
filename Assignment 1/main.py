@@ -51,7 +51,7 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
     ret, corners = cv2.findChessboardCorners(image, chessboard_size, None)
     if ret:
         print("Chessboard corners found.")
-        corners2 =  corners #cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
         cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
 
@@ -67,10 +67,11 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         if image_interpolated is None or corners_interpolated is None:
             return None
         else: 
-            corners2 = corners_interpolated # cv2.cornerSubPix(image_interpolated, corners_interpolated, (11,11), (-1,-1), criteria)
-            cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
             final_image = reverse_again (image,image_interpolated, corners_interpolated, corners)
 
+            corners2 = cv2.cornerSubPix(final_image, corners_interpolated, (11,11), (-1,-1), criteria)
+            cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
+            final_image = reverse_again (image,image_interpolated, corners2, corners)
             see_window("Result with Interpolation", final_image)
             return corners2
 
@@ -118,14 +119,19 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         folder_dir = 'webcam'
     elif select_run == 1:
         folder_dir = 'run_1'
+        print("Run 1:")
     elif select_run == 2:
         folder_dir = 'run_2'
+        print("Run 2:")
     elif select_run == 3:
         folder_dir = 'run_3'
+        print("Run 3:")
     elif select_run == 0:
-        folder_dir = 'images_aux'
+        folder_dir = 'images_aux2'
+        print("Auxiliar Run")
     else:
         folder_dir = 'run_1'
+        print("Run 1:")
     current_dir = os.getcwd()
     folder_path = os.path.join(current_dir, folder_dir)
     fail = False
@@ -142,21 +148,15 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
             imgpoints.append(corners2)
             objpoints.append(objp)
             cv2.waitKey(0)  
-            if select_run == 3:
-                ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
-                if ret:
-                    compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
-                else:
-                    print("Error during calibration.")
-        if corners2 is not None and len(corners2) > 0 and video == 1:
+            if video == 1:
+                ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
 
-            axis = np.float32([
-                [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],# Base
-                [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
-                [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
-            ])
-            ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
-            video_mode(mtx, dist, objp, axis)
+                axis = np.float32([
+                    [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],# Base
+                    [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
+                    [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
+                ])
+                video_mode(mtx, dist, objp, axis)
 
         else:
             print(f"No corners found for image {image_i}.")
@@ -168,7 +168,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
+            #online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
@@ -181,8 +181,8 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
 def main():
     select_run = 0
     webcam = 0
-    video = 1
-    optimize_image = False
+    video = 0
+    optimize_image = True
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
     #run(select_run=1)
