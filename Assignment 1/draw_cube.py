@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 def draw_cube(img, corners, imgpts):
-    cube_color = (255, 255, 255)  # You can change this to any color you want
+    cube_color = (255, 255, 255)
     imgpts = np.int32(imgpts).reshape(-1, 2)
     img = cv2.drawContours(img, [imgpts[:4]], -1, cube_color, 3)# Draw the base of the cube
 

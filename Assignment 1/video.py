@@ -7,22 +7,34 @@ import os
 from os import listdir
 
 def video_mode(mtx, dist, objp, axis):
-    i=1
-    cam=cv2.VideoCapture(0)
-    out = cv2.VideoWriter('output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 10, (int(cam.get(3)),int(cam.get(4))))
+    cam = cv2.VideoCapture(0)
+    out = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M','J','P','G'), 10, (int(cam.get(3)), int(cam.get(4))))
+
     while True:
-        hasframe,frame=cam.read()
-        if hasframe==False:
+        hasframe, frame = cam.read()
+        if not hasframe:
             break
-        gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-        ret,corners = cv2.findChessboardCorners(gray,(6,9),None)
-        if ret == True:
-            _,rvec,tvec,_=cv2.solvePnPRansac(objp,corners,mtx,dist)
-            imgpts,_=cv2.projectPoints(axis,rvec,tvec,mtx,dist)
-            frame = draw_cube(frame,corners,imgpts)
-        cv2.imshow('images',frame)
-        out.write(frame)
-        if cv2.waitKey(1)==5:
+
+        # Flip the frame to correct the mirroring effect
+        flipped_frame = cv2.flip(frame, 1)
+
+        gray = cv2.cvtColor(flipped_frame, cv2.COLOR_BGR2GRAY)
+        ret, corners = cv2.findChessboardCorners(gray, (6,9), None)
+
+        if ret:
+            _, rvec, tvec, _ = cv2.solvePnPRansac(objp, corners, mtx, dist)
+            imgpts, _ = cv2.projectPoints(axis, rvec, tvec, mtx, dist)
+            # Make sure to draw on the flipped frame
+            flipped_frame = draw_cube(flipped_frame, corners, imgpts)
+
+        # Display the flipped frame
+        cv2.imshow('images', flipped_frame)
+        # Write the flipped frame to the output file
+        out.write(flipped_frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Use ord('q') to exit
             break
-    cv2.destroyAllWindows()
+
     cam.release()
+    out.release()
+    cv2.destroyAllWindows()

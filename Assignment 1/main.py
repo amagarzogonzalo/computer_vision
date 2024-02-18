@@ -76,13 +76,16 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
             return corners2
 
 
-def online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
+def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     print("Online phase for Test Image:")
-    test_image_path = os.path.join(os.getcwd(), 'test', 'IMG20.jpg')
-    img_aux = load_and_resize_image(test_image_path)
-    img = preprocess_image (img_aux, False, kernel_params, canny_params)
+    #test_image_path = os.path.join(os.getcwd(), 'test', 'IMG20.jpg')
+    #img_aux = load_and_resize_image(test_image_path)
+    #img = preprocess_image (img_aux, False, kernel_params, canny_params)
+    #img_aux = load_and_resize_image(img)
+    #img_aux =
+    img = preprocess_image(img, False, kernel_params, canny_params)
     corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria)
-    square_size = 21  # Size of a chessboard square in mm
+    square_size = 22  # Size of a chessboard square in mm
     #for cube line axis
     axis = np.float32([
         [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],  # Base
@@ -153,10 +156,15 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if corners2 is not None and len(corners2) > 0: 
             imgpoints.append(corners2)
             objpoints.append(objp)
-            cv2.waitKey(0)  
-            if video == 1:
-                ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
+            cv2.waitKey(0)
+            ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
+            online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
+            print(f'Camera Matrix (K): {mtx}')
+            print(f'Image resolution: {img_aux.shape[1]}x{img_aux.shape[0]}')
 
+            if video == 1:
+                #ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
+                #square_size = 21  # Size of a chessboard square in mm
                 axis = np.float32([
                     [0, 0, 0], [0, square_size * 3, 0], [square_size * 3, square_size * 3, 0], [square_size * 3, 0, 0],# Base
                     [0, 0, -square_size * 3], [0, square_size * 3, -square_size * 3],
@@ -176,7 +184,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            online_phase(optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
+            online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
