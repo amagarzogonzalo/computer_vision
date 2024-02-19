@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from interpolate import interpolate, reverse_again
+from interpolate import interpolate
 from calibration import calibration, undistort, compute_error
 from draw_cube import draw, draw_cube
 import os

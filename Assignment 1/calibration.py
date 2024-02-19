@@ -69,6 +69,7 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
     mean_error = 0
     for i in range(len(objpoints)):
         imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+        #print(imgpoints2)
         error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
         mean_error += error
     total_error = mean_error/len(objpoints)

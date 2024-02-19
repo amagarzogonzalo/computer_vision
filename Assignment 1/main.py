@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from interpolate import interpolate, reverse_again, interpolate_aux
+from interpolate import interpolate
 from calibration import calibration, undistort, compute_error
 from draw_cube import draw, draw_cube
 import os
@@ -92,7 +92,6 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
         cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
-
         return corners2
     else:
         
@@ -101,24 +100,13 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         see_window("Image", image)
         cv2.setMouseCallback('Image', click_event,  (corners, image))
         cv2.waitKey(0)
-        image_interpolated, corners_interpolated = interpolate(image, corners, chessboard_size)
-
-        #image_interpolated, corners_interpolated, matrix = interpolate_aux(image, corners, chessboard_size)
-        if image_interpolated is None or corners_interpolated is None:
-            return None
-        else: 
-            #final_image = reverse_again (image,image_interpolated, corners_interpolated, corners, matrix)
-
-            #corners2 = corners_interpolated #cv2.cornerSubPix(final_image, corners_interpolated, (11,11), (-1,-1), criteria)
-            #cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
-            #final_image, scaled_corners = reverse_again (image,image_interpolated, corners2, corners, matrix)
-            #print(scaled_corners)
-            #see_window("aux", image_interpolated)
-            #see_window("Result with Interpolation", final_image)
-            return corners2
+        corners, image = interpolate(image, corners, chessboard_size)
+        corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)        
+        see_window("Result with Interpolation", image)
+        return corners2
 
 
-def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
+def online_phase(img,corners2, optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs, tvecs, objp):
     """
     Perform the online phase for a test image.
 
@@ -141,7 +129,6 @@ def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_siz
     #img_aux = load_and_resize_image(img)
     #img_aux =
     img = preprocess_image(img, False, kernel_params, canny_params)
-    corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria)
     square_size = 22  # Size of a chessboard square in mm
     #for cube line axis
     axis = np.float32([
@@ -152,21 +139,19 @@ def online_phase(img,optimize_image, kernel_params, canny_params, chessboard_siz
     #for axis lines
     axis2 = np.float32([[0,0,0],[square_size*3,0,0],[0,square_size*3,0],[0,0,square_size*-3]])
 
-    if corners2 is not None and len(corners2) > 0:
-        _, rvec, tvec, _ = cv2.solvePnPRansac(objp, corners2, mtx, dist)
-        imgpts, _ = cv2.projectPoints(axis, rvec, tvec, mtx, dist)
-        imgpts2, _ = cv2.projectPoints(axis2,rvec,tvec,mtx,dist)
-        color_image = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        color_image = draw_cube(color_image, corners2, imgpts)
-        color_image = draw(color_image, corners2, imgpts2)
-        see_window("Image with cube and axis lines", color_image)
-        #print(f'imgpts: {imgpts}')
-        #print(f'imgpts: {imgpts2}')
-        print("Online phase done.")
-        cv2.waitKey(0)
+    _, rvec, tvec, _ = cv2.solvePnPRansac(objp, corners2, mtx, dist)
+    imgpts, _ = cv2.projectPoints(axis, rvec, tvec, mtx, dist)
+    imgpts2, _ = cv2.projectPoints(axis2,rvec,tvec,mtx,dist)
+    color_image = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    color_image = draw_cube(color_image, corners2, imgpts)
+    color_image = draw(color_image, corners2, imgpts2)
+    see_window("Image with cube and axis lines", color_image)
+    #print(f'imgpts: {imgpts}')
+    #print(f'imgpts: {imgpts2}')
+    print("Online phase done.")
+    cv2.waitKey(0)
 
-    else:
-        print("No corners found in the test image.")
+    
 
 def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
     """
@@ -225,9 +210,9 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
             objpoints.append(objp)
             cv2.waitKey(0)
             ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
-            online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
-            print(f'Camera Matrix (K): {mtx}')
-            print(f'Image resolution: {img_aux.shape[1]}x{img_aux.shape[0]}')
+            online_phase(img_aux, corners2,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
+            #print(f'Camera Matrix (K): {mtx}')
+            #print(f'Image resolution: {img_aux.shape[1]}x{img_aux.shape[0]}')
 
             if video == 1:
                 #ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
@@ -251,7 +236,6 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            #online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
@@ -262,7 +246,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         return 0
 
 def main():
-    select_run = 0
+    select_run = 1
     webcam = 0
     video = 0
     optimize_image = False
