@@ -3,7 +3,72 @@ import numpy as np
 from itertools import permutations, combinations, product
 
 
+def lerp(v0, v1, i):
+    return v0 + i * (v1 - v0)
+
+def getEquidistantPoints(p1, p2, n):
+    return [(lerp(p1[0],p2[0],1./n*i), lerp(p1[1],p2[1],1./n*i)) for i in range(n+1)]
+
+
 def interpolate(image, corners, chessboard_size):
+    rows, cols = chessboard_size
+    eqpoints_x_above = getEquidistantPoints(corners[0], corners[1], rows+1)
+    eqpoints_x_bellow = getEquidistantPoints(corners[3], corners[2], rows+1)
+    eqpoints_y_left = getEquidistantPoints(corners[0], corners[3], cols+1)
+    eqpoints_y_right = getEquidistantPoints(corners[1], corners[2], cols+1)
+
+    #cv2.line(image, (int(eqpoints_x_above[1][0]), int(eqpoints_x_above[1][1])), (int(eqpoints_x_bellow[1][0]), int(eqpoints_x_bellow[1][1])), (255, 0, 0), 10)
+    mesh_grid = np.zeros((rows+1, cols+1, 2), dtype=np.int32)
+    for i in range(rows+1):
+        for j in range(cols+1):
+            x = int(eqpoints_x_above[j][0] + (eqpoints_x_bellow[j][0] - eqpoints_x_above[j][0]) * (1.0 * i / rows))
+            y = int(eqpoints_y_left[i][1] + (eqpoints_y_right[i][1] - eqpoints_y_left[i][1]) * (1.0 * j / cols))
+            mesh_grid[i, j] = [x, y]
+
+    # Draw circles at each point in the mesh grid
+    for i in range(rows+1):
+        for j in range(cols+1):
+            cv2.circle(image, (mesh_grid[i, j][0], mesh_grid[i, j][1]), 7, (255, 0, 0), -1)
+
+    for i in eqpoints_x_bellow:
+        cv2.circle(image, (int(i[0]), int(i[1])), 3, (255, 0, 0))
+
+    
+    # Display image
+    window_name = "Interpolated Image"
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL) 
+    cv2.resizeWindow(window_name, 650, 650)     
+    cv2.imshow(window_name, image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    """
+
+
+    coord_x = [corners[0][0], corners[1][0], corners[2][0], corners[3][0]]
+    coord_y = [corners[0][1], corners[1][1], corners[2][1], corners[3][1]]
+
+    xv, yv = np.meshgrid(coord_x, coord_y)
+    print(corners,"coordx", coord_x, "coordy",coord_y,xv, yv)
+
+    #aux = np.interp()"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def interpolate_aux(image, corners, chessboard_size):
     """
     Perform perspective transformation on the input image based on the detected corners of a chessboard.
 
@@ -14,6 +79,7 @@ def interpolate(image, corners, chessboard_size):
     """
     corners_np = np.float32(corners)
     height, width = image.shape  # 2000, 1500
+   
     dst_points = np.array([
         [0, 0],
         [width - 1, 0],
@@ -33,7 +99,7 @@ def interpolate(image, corners, chessboard_size):
 
     except:
         print("Wrong number of points. It must be exactly 4 points")
-        return None, None
+        return None, None, None
 
 
 def reverse_again(original_image, interpolated_image, corner_interpolated, corner_original, original_matrix):
@@ -65,26 +131,6 @@ def reverse_again(original_image, interpolated_image, corner_interpolated, corne
     result = cv2.add(original_bg, warped_fg)
 
     #print(corner_original, corner_interpolated)
-    rows, cols = interpolated_image.shape[:2]
-    corner_original = np.array(corner_original)
-    corner_interpolated = np.array(corner_interpolated)
+    scaled_corners = cv2.perspectiveTransform(corner_interpolated, np.linalg.inv(original_matrix))
 
-    corresponding_points = np.array([[0, 0],
-                                     [cols, 0],
-                                     [cols, rows],
-                                     [0, rows]])
-
-    corner_interpolated = np.array(corner_interpolated).reshape(-1, 2)
-    corner_original = np.array(corner_original).reshape(-1, 2)
-    matrixaux, _ = cv2.findHomography(corresponding_points, corner_original)
-
-    scaled_points = cv2.perspectiveTransform(np.array([corner_interpolated], dtype=np.float32), matrixaux)[0]
-
-    scaled_points = np.array(scaled_points)
-    scaled_points = scaled_points.reshape(-1, 1, 2)
-
-    #print(scaled_points.shape, corner_interpolated.shape)
-    sorted_indices = np.argsort(scaled_points[:, 0, 1])
-    sorted_scaled_points = scaled_points[sorted_indices]
-
-    return result, sorted_scaled_points
+    return result, scaled_corners

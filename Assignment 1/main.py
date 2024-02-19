@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from interpolate import interpolate, reverse_again
+from interpolate import interpolate, reverse_again, interpolate_aux
 from calibration import calibration, undistort, compute_error
 from draw_cube import draw, draw_cube
 import os
@@ -61,10 +61,10 @@ def click_event(event, x, y, flags, param):
     """
     if event == cv2.EVENT_LBUTTONDOWN:
         #print(x, ' ', y)
-        #cv2.circle(img, (x, y), 3, (255, 0, 0), -1)
-        #cv2.imshow('Image', img)
+        #cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
+        #see_window('Image selecting points', param[1])
         aux = x, y
-        param.append(aux)
+        param[0].append(aux)
 
 def see_window(window_name, image):
     """
@@ -99,18 +99,22 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         corners = []
         print("Chessboard corners not found. Click on four corners.")
         see_window("Image", image)
-        cv2.setMouseCallback('Image', click_event, corners)
+        cv2.setMouseCallback('Image', click_event,  (corners, image))
         cv2.waitKey(0)
         image_interpolated, corners_interpolated = interpolate(image, corners, chessboard_size)
+
+        #image_interpolated, corners_interpolated, matrix = interpolate_aux(image, corners, chessboard_size)
         if image_interpolated is None or corners_interpolated is None:
             return None
         else: 
-            final_image = reverse_again (image,image_interpolated, corners_interpolated, corners)
+            #final_image = reverse_again (image,image_interpolated, corners_interpolated, corners, matrix)
 
-            corners2 = cv2.cornerSubPix(final_image, corners_interpolated, (11,11), (-1,-1), criteria)
-            cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
-            final_image = reverse_again (image,image_interpolated, corners2, corners)
-            see_window("Result with Interpolation", final_image)
+            #corners2 = corners_interpolated #cv2.cornerSubPix(final_image, corners_interpolated, (11,11), (-1,-1), criteria)
+            #cv2.drawChessboardCorners(image_interpolated, chessboard_size, corners2, True)
+            #final_image, scaled_corners = reverse_again (image,image_interpolated, corners2, corners, matrix)
+            #print(scaled_corners)
+            #see_window("aux", image_interpolated)
+            #see_window("Result with Interpolation", final_image)
             return corners2
 
 
@@ -247,7 +251,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
             cv2.destroyAllWindows()
-            online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
+            #online_phase(img_aux,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs,objp)
             return total_error
 
         else:
@@ -258,9 +262,9 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         return 0
 
 def main():
-    select_run = 3
+    select_run = 0
     webcam = 0
-    video = 1
+    video = 0
     optimize_image = False
     kernel_params = [(3,3),0.5]
     canny_params = (375, 375)
