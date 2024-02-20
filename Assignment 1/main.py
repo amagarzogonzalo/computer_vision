@@ -101,6 +101,8 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         cv2.setMouseCallback('Image', click_event,  (corners, image))
         cv2.waitKey(0)
         corners, image = interpolate(image, corners, chessboard_size)
+        if corners is None or image is None:
+            return None
         corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)        
         see_window("Result with Interpolation", image)
         return corners2
@@ -210,7 +212,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
             objpoints.append(objp)
             cv2.waitKey(0)
             ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
-            online_phase(img_aux, corners2,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
+            #online_phase(img_aux, corners2,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
             #print(f'Camera Matrix (K): {mtx}')
             #print(f'Image resolution: {img_aux.shape[1]}x{img_aux.shape[0]}')
 
