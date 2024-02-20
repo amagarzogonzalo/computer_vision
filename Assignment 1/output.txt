@@ -1,0 +1,5 @@
+Auxiliar Run
+Attempting image: IMG3.jpg.
+Chessboard corners not found. Click on four corners.
+Compute Error: 
+Total error: 0.6499991595109926. Mean Error: 0.6499991595109926. Number of Object Points (Real World): 1 

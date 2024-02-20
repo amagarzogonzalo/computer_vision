@@ -1,5 +1,6 @@
 import cv2
 import numpy as np 
+import sys
 
 def calibration(objpoints, imgpoints, gray):
     """
@@ -69,7 +70,8 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
     mean_error = 0
     for i in range(len(objpoints)):
         imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
-        #print(imgpoints2)
+        #print("IMG POINTS projected from object points\n", imgpoints2 ,"Img points i = corners2:\n", imgpoints[i])
+        #print("shape object and img ", imgpoints2.shape, " img original ", imgpoints[i].shape)
         error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
         mean_error += error
     total_error = mean_error/len(objpoints)
