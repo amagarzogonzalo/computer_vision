@@ -93,8 +93,8 @@ def interpolate(image, corners, chessboard_size):
         line = auxiliar_line_horizontal[i]
         for j in range(cols):
             point = line[j]
-            corners_np[i * cols + j, 0, 0] = point[1]
-            corners_np[i * cols + j, 0, 1] = point[0]
+            corners_np[i * cols + j, 0, 0] = point[0]
+            corners_np[i * cols + j, 0, 1] = point[1]
 
     corners_np = np.array(corners_np, dtype=np.float32).reshape(-1, 1, 2)
 
