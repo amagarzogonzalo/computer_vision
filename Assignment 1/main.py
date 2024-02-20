@@ -103,7 +103,11 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         corners, image = interpolate(image, corners, chessboard_size)
         if corners is None or image is None:
             return None
-        corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)        
+        try:
+            corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        except cv2.error as e:
+            print("Error in cornerSubPix:", e)
+            corners2 = corners       
         see_window("Result with Interpolation", image)
         return corners2
 
@@ -190,7 +194,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         folder_dir = 'run_3'
         print("Run 3:")
     elif select_run == 0:
-        folder_dir = 'images_aux2'
+        folder_dir = 'images_aux'
         print("Auxiliar Run")
     else:
         folder_dir = 'run_1'
@@ -248,7 +252,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         return 0
 
 def main():
-    select_run = 1
+    select_run = 0
     webcam = 0
     video = 0
     optimize_image = False
