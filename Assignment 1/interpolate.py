@@ -25,6 +25,15 @@ def getEquidistantPoints(p1, p2, n):
 
 
 def draw_corners (image, eqpoints_x_above, eqpoints_x_bellow, cols):
+    """
+    Draws auxiliary lines and circles representing the corners on the image.
+
+    :param image: The image on which to draw the auxiliary lines and corners.
+    :param eqpoints_x_above: List of points representing the upper edge of the chessboard.
+    :param eqpoints_x_bellow: List of points representing the lower edge of the chessboard.
+    :param cols: Number of columns in the chessboard grid.
+    :return: The annotated image with auxiliary lines and corners.
+    """
     auxiliar_line_vertical = []  
 
     for i in range(len(eqpoints_x_above)):
@@ -58,7 +67,10 @@ def interpolate(image, corners, chessboard_size):
     :param chessboard_size: A tuple indicating the number of internal corners in the chessboard (rows, cols).
     :return: A tuple containing the modified corner points as a NumPy array and the annotated image.
     """
-    rows, cols = chessboard_size #9,6
+    if len(corners) < 4:
+        print("4 corners are needed to do the interpolation.")
+        return None, None
+    cols, rows = chessboard_size #9,6
 
     eqpoints_x_above = getEquidistantPoints(corners[0], corners[1], cols+1)
     eqpoints_x_bellow = getEquidistantPoints(corners[3], corners[2], cols+1)
@@ -76,6 +88,7 @@ def interpolate(image, corners, chessboard_size):
         auxiliar_line_horizontal.append(auxiliar_line)
  
     corners_np = np.zeros((rows*cols,1,2),dtype=np.float32)
+
     for i in range(rows):
         line = auxiliar_line_horizontal[i]
         for j in range(cols):
@@ -83,4 +96,16 @@ def interpolate(image, corners, chessboard_size):
             corners_np[i * cols + j, 0, 0] = point[1]
             corners_np[i * cols + j, 0, 1] = point[0]
 
+    corners_np = np.array(corners_np, dtype=np.float32).reshape(-1, 1, 2)
+
     return corners_np, draw_corners(image,eqpoints_x_above,eqpoints_x_bellow,cols)
+ 
+
+ #CODE2
+    corners_np = np.array(auxiliar_line_vertical, dtype=np.float32).reshape(-1, 1, 2)
+    sorted_indices = np.argsort(corners_np[:, :, 1].flatten())  
+
+    corners_modified = corners_np[sorted_indices]  
+    #print("Corners2",corners_modified)  
+
+    return corners_modified, image

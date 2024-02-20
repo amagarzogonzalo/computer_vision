@@ -7,7 +7,6 @@ import os
 from os import listdir
 from webcam import webcam_mode
 from video import video_mode
-import sys
 
 
 def load_and_resize_image(image_path, scale_x=1, scale_y=1):
@@ -102,7 +101,13 @@ def find_and_draw_chessboard_corners(image, chessboard_size, criteria):
         cv2.setMouseCallback('Image', click_event,  (corners, image))
         cv2.waitKey(0)
         corners, image = interpolate(image, corners, chessboard_size)
-        corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)        
+        if corners is None or image is None:
+            return None
+        try:
+            corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        except cv2.error as e:
+            print("Error in cornerSubPix:", e)
+            corners2 = corners       
         see_window("Result with Interpolation", image)
         return corners2
 
@@ -166,12 +171,13 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
     :param video: Flag indicating whether to record a video.
     """
     corner_points = []
-    chessboard_size = (9,6)
+    chessboard_size = (6, 9)
     square_size = 22
     objpoints = []
     imgpoints = []
     objp = np.zeros((6*9,3), np.float32)
-    objp[:,:2] = np.mgrid[0:6,0:9].T.reshape(-1,2)*square_size
+    objp[:,:2] = np.mgrid[0:6,0:9].T.reshape(-1,2)
+    objp[:,:2]=objp[:,:2]*square_size
 
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -188,7 +194,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         folder_dir = 'run_3'
         print("Run 3:")
     elif select_run == 0:
-        folder_dir = 'images_aux2'
+        folder_dir = 'images_aux'
         print("Auxiliar Run")
     else:
         folder_dir = 'run_1'
@@ -196,20 +202,20 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
     current_dir = os.getcwd()
     folder_path = os.path.join(current_dir, folder_dir)
     fail = False
-    imageproof = None
+
     for image_i in os.listdir(folder_dir):
         image_path = os.path.join(folder_path, image_i)
         print(f"Attempting image: {image_i}.")
         img_aux = load_and_resize_image(image_path)
         # img is gray image
         img = preprocess_image (img_aux, optimize_image, kernel_params, canny_params)
-        imageproof = img
+       
         corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
         if corners2 is not None and len(corners2) > 0: 
             imgpoints.append(corners2)
             objpoints.append(objp)
             cv2.waitKey(0)
-            #ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
+            ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints, img)
             #online_phase(img_aux, corners2,optimize_image, kernel_params, canny_params, chessboard_size, criteria, mtx, dist, rvecs,tvecs, objp)
             #print(f'Camera Matrix (K): {mtx}')
             #print(f'Image resolution: {img_aux.shape[1]}x{img_aux.shape[0]}')
@@ -223,6 +229,9 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
                     [square_size * 3, square_size * 3, -square_size * 3], [square_size * 3, 0, -square_size * 3]  # Top
                 ])
                 video_mode(mtx, dist, objp, axis)
+
+
+
         else:
             print(f"No corners found for image {image_i}.")
             fail = True
@@ -232,7 +241,6 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         ret, mtx, dist, rvecs, tvecs = calibration(objpoints, imgpoints,  img)
         if ret:
             total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
-            
             cv2.destroyAllWindows()
             return total_error
 
@@ -244,16 +252,14 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
         return 0
 
 def main():
-    with open('output.txt', 'w') as f:
-        sys.stdout = f
-        select_run = 0
-        webcam = 0
-        video = 0
-        optimize_image = False
-        kernel_params = [(3,3),0.5]
-        canny_params = (375, 375)
-        #run(select_run=1)
-        #run(select_run=2)
-        run(select_run, optimize_image, kernel_params, canny_params, webcam, video)
+    select_run = 0
+    webcam = 0
+    video = 0
+    optimize_image = False
+    kernel_params = [(3,3),0.5]
+    canny_params = (375, 375)
+    #run(select_run=1)
+    #run(select_run=2)
+    run(select_run, optimize_image, kernel_params, canny_params, webcam, video)
 
 main()
