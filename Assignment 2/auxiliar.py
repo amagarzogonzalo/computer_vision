@@ -64,8 +64,10 @@ def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds)
     if optimize_image:
         gray = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(src=gray, ksize=(kernel_params[0][0], kernel_params[0][1]), sigmaX=kernel_params[1])
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        final_image = clahe.apply(blurred)
         #img = cv2.Canny(blurred, canny_thresholds[0], canny_thresholds[1])
-        return blurred, image_aux
+        return final_image, image_aux
 
     else:
         img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)

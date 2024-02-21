@@ -11,17 +11,27 @@ def corners_sub_pix(image, corners, criteria):
         corners2 = corners   
     return corners2
 
+def extract_corners (corners):
+    print("extract corners")
 
-def detect_corners_automatically(gray, img, number_corners=48, threshold= 0.1, min_ec_distance=10):
+def detect_corners_automatically(gray, img, number_corners=63, threshold= 0.2, min_ec_distance=10):
     corners = cv2.goodFeaturesToTrack(gray,number_corners,threshold, min_ec_distance)
-    corners = np.int0(corners)
-    if len(corners) < 20:
+    print(corners)
+    corners_draw = np.int32(corners)
+    corners_np = np.float32(corners)
+
+    print()
+    if len(corners) < 48:
+        print("It was not possible to detect automatically the 48 corners.")
         return False, None, None
     else:
-        for i in corners:
+        for i in corners_draw:
             x,y = i.ravel()
             cv2.circle(img,(x,y),3,255,-1)
-        return True, corners, img  
+            cv2.circle(gray,(x,y),3,255,-1)
+        see_window("AUXILIAR", gray)
+        corners_np = np.array(corners_np, dtype=np.float32).reshape(-1, 1, 2)
+        return True, corners_np, img  
 
 def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
     """
@@ -37,7 +47,7 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
     ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
     if ret:
         print("Chessboard corners found.")
-        corners2 = corners_sub_pix(gray,corners,criteria)            
+        corners2 = corners_sub_pix(gray,corners,criteria)          
         cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
         return corners2, image
