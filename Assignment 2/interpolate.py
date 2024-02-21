@@ -103,12 +103,3 @@ def interpolate(image, corners, chessboard_size):
     corners_np = np.array(corners_np, dtype=np.float32).reshape(-1, 1, 2)
 
     return corners_np, draw_corners(image, eqpoints_x_above, eqpoints_x_bellow, cols)
-
-    # CODE2
-    corners_np = np.array(auxiliar_line_vertical, dtype=np.float32).reshape(-1, 1, 2)
-    sorted_indices = np.argsort(corners_np[:, :, 1].flatten())
-
-    corners_modified = corners_np[sorted_indices]
-    # print("Corners2",corners_modified)
-
-    return corners_modified, image

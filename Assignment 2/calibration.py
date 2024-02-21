@@ -66,8 +66,8 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
     :param rvecs: The rotation vectors.
     :param tvecs: The translation vectors.
     :param mtx: The camera matrix.
-    :param dist: The distortion coefficients
-    :return: The total error
+    :param dist: The distortion coefficients.
+    :return: The total error.
     """
     mean_error = 0
     for i in range(len(objpoints)):
@@ -82,20 +82,3 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
     return total_error
 
 
-def extract_frames(video_path, interval=30):
-    """
-    Extracts frames from a video file every 'interval' frames.
-    """
-    cap = cv2.VideoCapture(video_path)
-    frames = []
-    count = 0
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break  # Reached end of video
-        if count % interval == 0:
-            frames.append(frame)
-        count += 1
-    cap.release()
-    return frames
