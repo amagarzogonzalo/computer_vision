@@ -3,8 +3,12 @@ import numpy as np
 from interpolate import interpolate, getEquidistantPoints
 from auxiliar import see_window, click_event
 from scipy.spatial.distance import cdist
+from scipy.spatial import distance
+
 
 class Outsider_corners:
+    calculated = False
+    distance_threshold = 0
     top_left = (0,0)
     top_right = (0,0)
     bottom_left = (0,0)
@@ -43,50 +47,58 @@ def find_external_corners(corners, image, chessboard_size):
     bottom_right_left = corners[bottom_right_index+chessboard_size[0]][0]
     bottom_right_above = corners[bottom_right_index-1][0]
 
+    Outsider_corners.distance_threshold = 1.5*(top_left[1]-top_left_bellow[1])
     Outsider_corners.top_left = ((top_left[0]-(top_left_right[0]-top_left[0])),   (top_left[1]-(top_left_bellow[1]-top_left[1])))
     Outsider_corners.top_right = ((top_right[0]+(-top_right_left[0]+top_right[0])),   (top_right[1]-(top_right_bellow[1]-top_right[1])))
     Outsider_corners.bottom_left = ((bottom_left[0]-(bottom_left_right[0]-bottom_left[0])),   (bottom_left[1]+(-bottom_left_above[1]+bottom_left[1])))
     Outsider_corners.bottom_right = ((bottom_right[0]+(-bottom_right_left[0]+bottom_right[0])),   (bottom_right[1]+(-bottom_right_above[1]+bottom_right[1])))
-
-
 
     cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
     cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
     cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
     cv2.circle(image, (int(Outsider_corners.bottom_right[0]), int(Outsider_corners.bottom_right[1])), 1, (0, 255, 255), thickness=2)
 
+    image_height, image_width = image.shape[:2]
 
-    #for point in closest_top_left:
-     #   cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+    if (
+        Outsider_corners.top_left[0] < 0 or Outsider_corners.top_left[1] < 0 or
+        Outsider_corners.top_right[0] >= image_width or Outsider_corners.top_right[1] < 0 or
+        Outsider_corners.bottom_left[0] < 0 or Outsider_corners.bottom_left[1] >= image_height or
+        Outsider_corners.bottom_right[0] >= image_width or Outsider_corners.bottom_right[1] >= image_height
+    ):
+        if Outsider_corners.top_left[0] < 0:
+            print("La coordenada x de la esquina superior izquierda está fuera de los límites")
+        elif Outsider_corners.top_left[1] < 0:
+            print("La coordenada y de la esquina superior izquierda está fuera de los límites")
+        elif Outsider_corners.top_right[0] >= image_width:
+            print("La coordenada x de la esquina superior derecha está fuera de los límites")
+        elif Outsider_corners.top_right[1] < 0:
+            print("La coordenada y de la esquina superior derecha está fuera de los límites")
+        elif Outsider_corners.bottom_left[0] < 0:
+            print("La coordenada x de la esquina inferior izquierda está fuera de los límites")
+        elif Outsider_corners.bottom_left[1] >= image_height:
+            print("La coordenada y de la esquina inferior izquierda está fuera de los límites")
+        elif Outsider_corners.bottom_right[0] >= image_width:
+            print("La coordenada x de la esquina inferior derecha está fuera de los límites")
+        elif Outsider_corners.bottom_right[1] >= image_height:
+            print("La coordenada y de la esquina inferior derecha está fuera de los límites")
 
+        Outsider_corners.calculated = False
+        print("The points are outside image.")
+    else:
+        Outsider_corners.calculated = True
+        print("The points are inside image.")
 
-    # white yellow green red
-    print(top_left)
-    cv2.circle(image,(int(top_left[0]), int(top_left[1])),7,(255,255,255),-1)
-    cv2.circle(image,(int(top_left_right[0]), int(top_left_right[1])),5,(255,255,255),-1)
-    cv2.circle(image,(int(top_left_bellow[0]), int(top_left_bellow[1])),9,(255,255,255),-1)
-
-    cv2.circle(image,(int(bottom_right[0]), int(bottom_right[1])),7,(0,255,255),-1)
-    cv2.circle(image,(int(top_right[0]), int(top_right[1])),11,(0,255,0),-1)
-    cv2.circle(image,(int(bottom_left[0]), int(bottom_left[1])),7,(0,0,255),-1)
-    i = 1
-    for corner in corners:
-    # Extrae las coordenadas del punto
-        x, y = corner[0]
-
-
-        # Dibuja un círculo naranja alrededor del punto
-        # cv2.circle(img, center, radius, color, thickness)
-        # Aumenta ligeramente el radio en cada iteración
-        radius = i   # Incremento de radio
-        cv2.circle(image, (int(x), int(y)), radius, (0, 165, 255), thickness=2)
-        i+= 1
-   
     return image
 
 def draw_corners(image, gray, corners):
     print("MANUAL")
     corners = np.array(corners, dtype='int32')
+    if Outsider_corners.calculated is True:
+        cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.bottom_right[0]), int(Outsider_corners.bottom_right[1])), 1, (0, 255, 255), thickness=2)
  
     for i in range(len(corners)):
         x1, y1 = corners[i].ravel()
@@ -100,12 +112,36 @@ def draw_corners(image, gray, corners):
 
 def extract_corners (corners, image, chessboard_size, gray, number_corners):
     corners = corners.reshape(number_corners, 2)
-    #print(corners.shape, corners) 
-    threshold = 15
-    # idea-> find top corners and use it for interpolation, find topleft topright bottomleft bottomright
+    top_left_ref = np.array([0, 0])
+    top_right_ref = np.array([image.shape[1], 0])
+    bottom_left_ref = np.array([0, image.shape[0]])
+    bottom_right_ref = np.array([image.shape[1], image.shape[0]])
 
-    #interpolate(image,top_four_corners, chessboard_size)
-    draw_corners(image, gray, corners)
+
+
+    distances = np.zeros((number_corners, 4))
+    for i, corner in enumerate(corners):
+        distances[i, 0] = np.linalg.norm(corner - Outsider_corners.top_left)
+        distances[i, 1] = np.linalg.norm(corner - Outsider_corners.top_right)
+        distances[i, 2] = np.linalg.norm(corner - Outsider_corners.bottom_left)
+        distances[i, 3] = np.linalg.norm(corner - Outsider_corners.bottom_right)
+
+
+
+    closest_corners_indices = np.argmin(distances, axis=0)
+    if Outsider_corners.calculated is False:
+        #np.any(np.min(distances, axis=1) > Outsider_corners.distance_threshold) or np.any(np.min(distances, axis=0) > Outsider_corners.distance_threshold):
+        print("No found 4 corners")
+    else:
+        top_left = corners[closest_corners_indices[0]]
+        top_right = corners[closest_corners_indices[1]]
+        bottom_left = corners[closest_corners_indices[2]]
+        bottom_right = corners[closest_corners_indices[3]]
+        cv2.circle(image, (int(top_left[0]), int(top_left[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(top_right[0]), int(top_right[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(bottom_left[0]), int(bottom_left[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(bottom_right[0]), int(bottom_right[1])), 5, (0, 0, 255), thickness=2)
+        draw_corners(image, gray, corners)
 
 
 def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, threshold= 0.05, min_ec_distance=20):
