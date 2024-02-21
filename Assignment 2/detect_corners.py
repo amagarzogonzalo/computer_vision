@@ -21,75 +21,66 @@ def corners_sub_pix(image, corners, criteria):
 
 def find_external_corners(corners, image, chessboard_size):
     
-    top_right = corners[0][0]
-    bottom_right = corners[chessboard_size[0] - 1][0]
-    top_left = corners[(chessboard_size[1] - 1) * chessboard_size[0]][0]
-    bottom_left = corners[-1][0]
+    top_right_index = 0
+    bottom_right_index = chessboard_size[0] - 1
+    top_left_index = (chessboard_size[1] - 1) * chessboard_size[0]
+    bottom_left_index = -1
        
-    def find_closest_points(target_point, all_points, k=3):
-        all_points = all_points.reshape(-1, 2)  
-
-        distances = cdist([target_point], all_points)[0]
-        indices = distances.argsort()[1:k]
-        return [all_points[i] for i in indices]
-
-    closest_top_left = find_closest_points(top_left, corners)
-    closest_bottom_right = find_closest_points(bottom_right, corners)
-    closest_top_right = find_closest_points(top_right, corners)
-    closest_bottom_left = find_closest_points(bottom_left, corners)
-
-    top_left_adjusted = np.array(top_left)
-    top_left_right = None
-    top_left_bellow = None
-    for aux in closest_bottom_left:
-        cv2.circle(image, (int(aux[0]), int(aux[1])), 24, (0, 0, 0), -1)
-
-        print(aux, top_left)
-        if aux[1] > top_left[0]:
-            top_left_bellow = aux
-        if aux[0] > top_left[1]:
-            top_left_right = aux
-    print(top_left_right)
+    top_right = corners[top_right_index][0]
+    bottom_right = corners[bottom_right_index][0]
+    top_left = corners[top_left_index][0]
+    bottom_left = corners[bottom_left_index][0]
     
+    top_left_right = corners[top_left_index-chessboard_size[0]][0]
+    top_left_bellow = corners[top_left_index+1][0]
 
-    # Adjust the bottom right corner based on the closest points
-    bottom_right_adjusted = np.array(bottom_right)
-    bottom_right_adjusted += closest_top_right[0] - bottom_right_adjusted  # Move towards the top right
-    bottom_right_adjusted += closest_bottom_left[0] - closest_top_right[0]  # Move towards the bottom left
+    top_right_left = corners[top_right_index+chessboard_size[0]][0]
+    top_right_bellow = corners[top_right_index+1][0]
+    
+    bottom_left_right = corners[bottom_left_index-chessboard_size[0]][0]
+    bottom_left_above = corners[bottom_left_index-1][0]
 
-    # Adjust the top right corner based on the closest points
-    top_right_adjusted = np.array(top_right)
-    top_right_adjusted += closest_bottom_right[0] - top_right_adjusted  # Move towards the bottom right
-    top_right_adjusted += closest_top_left[0] - closest_bottom_right[0]  # Move towards the top left
+    bottom_right_left = corners[bottom_right_index+chessboard_size[0]][0]
+    bottom_right_above = corners[bottom_right_index-1][0]
 
-    # Adjust the bottom left corner based on the closest points
-    bottom_left_adjusted = np.array(bottom_left)
-    bottom_left_adjusted += closest_top_left[0] - bottom_left_adjusted  # Move towards the top left
-    bottom_left_adjusted += closest_bottom_right[0] - closest_top_left[0]  # Move towards the bottom right
-
-    Outsider_corners.top_left = tuple(map(int, top_left_adjusted))
-    Outsider_corners.bottom_right = tuple(map(int, bottom_right_adjusted))
-    Outsider_corners.top_right = tuple(map(int, top_right_adjusted))
-    Outsider_corners.bottom_left = tuple(map(int, bottom_left_adjusted))
+    Outsider_corners.top_left = ((top_left[0]-(top_left_right[0]-top_left[0])),   (top_left[1]-(top_left_bellow[1]-top_left[1])))
+    Outsider_corners.top_right = ((top_right[0]+(-top_right_left[0]+top_right[0])),   (top_right[1]-(top_right_bellow[1]-top_right[1])))
+    Outsider_corners.bottom_left = ((bottom_left[0]-(bottom_left_right[0]-bottom_left[0])),   (bottom_left[1]+(-bottom_left_above[1]+bottom_left[1])))
+    Outsider_corners.bottom_right = ((bottom_right[0]+(-bottom_right_left[0]+bottom_right[0])),   (bottom_right[1]+(-bottom_right_above[1]+bottom_right[1])))
 
 
-    for point in closest_top_left:
-        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
-    for point in closest_bottom_right:
-        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
-    for point in closest_top_right:
-        cv2.circle(image, (int(point[0]), int(point[1])), 11, (0, 0, 0), -1)
-    for point in closest_bottom_left:
-        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+
+    cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
+    cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
+    cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
+    cv2.circle(image, (int(Outsider_corners.bottom_right[0]), int(Outsider_corners.bottom_right[1])), 1, (0, 255, 255), thickness=2)
+
+
+    #for point in closest_top_left:
+     #   cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+
 
     # white yellow green red
     print(top_left)
     cv2.circle(image,(int(top_left[0]), int(top_left[1])),7,(255,255,255),-1)
+    cv2.circle(image,(int(top_left_right[0]), int(top_left_right[1])),5,(255,255,255),-1)
+    cv2.circle(image,(int(top_left_bellow[0]), int(top_left_bellow[1])),9,(255,255,255),-1)
+
     cv2.circle(image,(int(bottom_right[0]), int(bottom_right[1])),7,(0,255,255),-1)
     cv2.circle(image,(int(top_right[0]), int(top_right[1])),11,(0,255,0),-1)
     cv2.circle(image,(int(bottom_left[0]), int(bottom_left[1])),7,(0,0,255),-1)
+    i = 1
+    for corner in corners:
+    # Extrae las coordenadas del punto
+        x, y = corner[0]
 
-    
+
+        # Dibuja un círculo naranja alrededor del punto
+        # cv2.circle(img, center, radius, color, thickness)
+        # Aumenta ligeramente el radio en cada iteración
+        radius = i   # Incremento de radio
+        cv2.circle(image, (int(x), int(y)), radius, (0, 165, 255), thickness=2)
+        i+= 1
    
     return image
 
