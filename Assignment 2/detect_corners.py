@@ -2,8 +2,16 @@ import cv2
 import numpy as np
 from interpolate import interpolate, getEquidistantPoints
 from auxiliar import see_window, click_event
+from scipy.spatial.distance import cdist
+
+class Outsider_corners:
+    top_left = (0,0)
+    top_right = (0,0)
+    bottom_left = (0,0)
+    bottom_right = (0,0)
 
 def corners_sub_pix(image, corners, criteria):
+    return corners
     try:
         corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
     except cv2.error as e:
@@ -11,51 +19,95 @@ def corners_sub_pix(image, corners, criteria):
         corners2 = corners   
     return corners2
 
+def find_external_corners(corners, image, chessboard_size):
+    
+    top_right = corners[0][0]
+    bottom_right = corners[chessboard_size[0] - 1][0]
+    top_left = corners[(chessboard_size[1] - 1) * chessboard_size[0]][0]
+    bottom_left = corners[-1][0]
+       
+    def find_closest_points(target_point, all_points, k=3):
+        all_points = all_points.reshape(-1, 2)  
 
-def check_for_bigger_line(lines):
-    for i in range(len(lines)):
-        for j in range(i + 1, len(lines)):
-            line1 = lines[i]
-            line2 = lines[j]
-            if line1[0] == line2[0] or line1[0] == line2[1]:
-                if np.cross(np.array(line1[1]) - np.array(line1[0]), np.array(line2[1]) - np.array(line1[0])) == 0:
-                    print("Lines", i, "and", j, "are collinear and can potentially form a bigger line.")
+        distances = cdist([target_point], all_points)[0]
+        indices = distances.argsort()[1:k]
+        return [all_points[i] for i in indices]
+
+    closest_top_left = find_closest_points(top_left, corners)
+    closest_bottom_right = find_closest_points(bottom_right, corners)
+    closest_top_right = find_closest_points(top_right, corners)
+    closest_bottom_left = find_closest_points(bottom_left, corners)
+
+    top_left_adjusted = np.array(top_left)
+    top_left_right = None
+    top_left_bellow = None
+    for aux in closest_bottom_left:
+        cv2.circle(image, (int(aux[0]), int(aux[1])), 24, (0, 0, 0), -1)
+
+        print(aux, top_left)
+        if aux[1] > top_left[0]:
+            top_left_bellow = aux
+        if aux[0] > top_left[1]:
+            top_left_right = aux
+    print(top_left_right)
+    
+
+    # Adjust the bottom right corner based on the closest points
+    bottom_right_adjusted = np.array(bottom_right)
+    bottom_right_adjusted += closest_top_right[0] - bottom_right_adjusted  # Move towards the top right
+    bottom_right_adjusted += closest_bottom_left[0] - closest_top_right[0]  # Move towards the bottom left
+
+    # Adjust the top right corner based on the closest points
+    top_right_adjusted = np.array(top_right)
+    top_right_adjusted += closest_bottom_right[0] - top_right_adjusted  # Move towards the bottom right
+    top_right_adjusted += closest_top_left[0] - closest_bottom_right[0]  # Move towards the top left
+
+    # Adjust the bottom left corner based on the closest points
+    bottom_left_adjusted = np.array(bottom_left)
+    bottom_left_adjusted += closest_top_left[0] - bottom_left_adjusted  # Move towards the top left
+    bottom_left_adjusted += closest_bottom_right[0] - closest_top_left[0]  # Move towards the bottom right
+
+    Outsider_corners.top_left = tuple(map(int, top_left_adjusted))
+    Outsider_corners.bottom_right = tuple(map(int, bottom_right_adjusted))
+    Outsider_corners.top_right = tuple(map(int, top_right_adjusted))
+    Outsider_corners.bottom_left = tuple(map(int, bottom_left_adjusted))
+
+
+    for point in closest_top_left:
+        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+    for point in closest_bottom_right:
+        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+    for point in closest_top_right:
+        cv2.circle(image, (int(point[0]), int(point[1])), 11, (0, 0, 0), -1)
+    for point in closest_bottom_left:
+        cv2.circle(image, (int(point[0]), int(point[1])), 7, (0, 0, 0), -1)
+
+    # white yellow green red
+    print(top_left)
+    cv2.circle(image,(int(top_left[0]), int(top_left[1])),7,(255,255,255),-1)
+    cv2.circle(image,(int(bottom_right[0]), int(bottom_right[1])),7,(0,255,255),-1)
+    cv2.circle(image,(int(top_right[0]), int(top_right[1])),11,(0,255,0),-1)
+    cv2.circle(image,(int(bottom_left[0]), int(bottom_left[1])),7,(0,0,255),-1)
+
+    
+   
+    return image
 
 def draw_corners(image, gray, corners):
+    print("MANUAL")
     corners = np.array(corners, dtype='int32')
-    lines = []
+ 
     for i in range(len(corners)):
         x1, y1 = corners[i].ravel()
-        
-        # Calculate distances to all other corners in 2D space
-        distances = np.linalg.norm(corners - corners[i], axis=1)
-        
-        # Exclude the current corner's distance (distance to itself)
-        distances[i] = 0
-        
-        # Find the indices of the two nearest corners
-        nearest_indices = np.argsort(distances)[1:2]
-        
-        # Draw lines to the two nearest corners
-        for j in nearest_indices:
-            x2, y2 = corners[j].ravel()
-            lines.append(((x1, y1), (x2, y2)))
-
-            #cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
-            #cv2.line(gray, (x1, y1), (x2, y2), 255, 1)
+       
         
         cv2.circle(image,(x1,y1),3,255,-1)
         cv2.circle(gray,(x1,y1),3,255,-1)
 
 
-    bigger_lines = check_for_bigger_line(lines)
-    if len(bigger_lines)>0:
-        for bigger_line in bigger_lines:
-            cv2.line(image, bigger_line[0], bigger_line[1], (255, 0, 255), 2)
     return image, gray 
 
 def extract_corners (corners, image, chessboard_size, gray, number_corners):
-    print("extract corners")
     corners = corners.reshape(number_corners, 2)
     #print(corners.shape, corners) 
     threshold = 15
@@ -65,8 +117,8 @@ def extract_corners (corners, image, chessboard_size, gray, number_corners):
     draw_corners(image, gray, corners)
 
 
-def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, threshold= 0.005, min_ec_distance=20):
-    corners = cv2.goodFeaturesToTrack(gray,number_corners,threshold, min_ec_distance)
+def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, threshold= 0.05, min_ec_distance=20):
+    corners = cv2.goodFeaturesToTrack(gray,number_corners,threshold, min_ec_distance, useHarrisDetector=True, k=0.005)
     corners_draw = np.int32(corners)
     corners_np = np.float32(corners)
     extract_corners(corners_np, img, chessboard_size, gray, len(corners))
@@ -92,6 +144,8 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
         print("Chessboard corners found.")
         corners2 = corners_sub_pix(gray,corners,criteria)          
         cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
+        
+        image = find_external_corners(corners, image, chessboard_size)
         see_window("Detected corners automatically", image)
         return corners2, image
     else:
@@ -115,36 +169,3 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
             return corners2, image
 
 
-def check_for_bigger_line(lines):
-    bigger_lines = [] 
-    for i in range(len(lines)):
-        for j in range(i + 1, len(lines)):
-            line1 = lines[i]
-            line2 = lines[j]
-            # Check if the lines are collinear
-            #if np.cross(np.array(line1[1]) - np.array(line1[0]), np.array(line2[1]) - np.array(line1[0])) == 0:
-            if (collinear(line1[0][0], line1[0][1], line1[1][0], line1[1][1], line2[1][0], line2[1][1]) or collinear(line1[0][0], line1[0][1], line1[1][0], line1[1][1], line2[0][0], line2[0][1])) and line1[0][0] != line2[0][0] and line1[0][0] != line2[1][0] and line1[1][0] != line2[1][0] and line1[1][0] != line2[0][0]:
-                # Lines are collinear, can potentially form a bigger line
-                #approximate
-                print(line1[0], ".", line1[1], "||", line2[0], ".", line2[1])
-                small_point = min(line1[0], line1[1], line2[0], line2[1])
-                big_point = max(line1[0], line1[1], line2[0], line2[1])
-                # Create the bigger line using the smallest and largest points
-                bigger_line = (small_point, big_point)                
-                print("Lines", i, "and", j, "are collinear and can potentially form a bigger line.")
-                bigger_lines.append(bigger_line)
-                #return bigger_lines
-    return bigger_lines
-
-
-def collinear(x1, y1, x2, y2, x3, y3):
-     
-    """ Calculation the area of  
-        triangle. We have skipped 
-        multiplication with 0.5 to
-        avoid floating point computations """
-    a = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
-    if a == 0:
-        return True
-    else:
-        return False
