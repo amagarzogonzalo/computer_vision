@@ -12,7 +12,7 @@ def see_window(window_name, image):
     cv2.resizeWindow(window_name, 650, 650)
     cv2.imshow(window_name, image)
 
-def extract_frames(video_path, interval=30):
+def extract_frames(video_path, interval=100):
     """
     Extracts frames from a video file every 'interval' frames.
     :param videopath: Path of the video.
