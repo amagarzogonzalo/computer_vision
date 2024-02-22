@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 
 def see_window(window_name, image):
     """
@@ -51,6 +52,18 @@ def click_event(event, x, y, flags, param):
         aux = x, y
         param[0].append(aux)
 
+def save_intrinsics(mtx, rvecs, tvecs, dist):
+
+    intrinsics_data = {
+        "mtx": mtx.tolist(),
+        "dist": dist.tolist(),
+        "rvecs": [rvec.tolist() for rvec in rvecs],
+        "tvecs": [tvec.tolist() for tvec in tvecs]
+    }
+    config_path = os.path.join('data/camX/', "intrinsics.xml")
+    fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_WRITE)
+    fs.write("intrinsics", intrinsics_data)
+    fs.release()
 
 def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
     """
