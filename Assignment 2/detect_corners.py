@@ -18,10 +18,11 @@ class Outsider_corners:
 def corners_sub_pix(image, corners, criteria):
     try:
         corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
+        return corners2
     except cv2.error as e:
         print("Error in cornerSubPix:", e)
-        corners2 = corners   
-    return corners2
+        return corners
+    
 
 def find_external_corners(corners, image, chessboard_size):
     
@@ -82,54 +83,6 @@ def find_external_corners(corners, image, chessboard_size):
 
     return image
 
-def draw_corners(image, gray, corners):
-    #print("MANUAL")
-    corners = np.array(corners, dtype='int32')
-    if Outsider_corners.calculated is True:
-        cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
-        cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
-        cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
-        cv2.circle(image, (int(Outsider_corners.bottom_right[0]), int(Outsider_corners.bottom_right[1])), 1, (0, 255, 255), thickness=2)
- 
-    for i in range(len(corners)):
-        x1, y1 = corners[i].ravel()
-       
-        
-        cv2.circle(image,(x1,y1),3,255,-1)
-        cv2.circle(gray,(x1,y1),3,255,-1)
-
-
-    return image, gray 
-
-def extract_corners (corners, image, chessboard_size, gray, number_corners):
-    """
-    Obtain the nearest point according to Harris.
-    """
-    corners = corners.reshape(number_corners, 2)
-
-    distances = np.zeros((number_corners, 4))
-    for i, corner in enumerate(corners):
-        distances[i, 0] = np.linalg.norm(corner - Outsider_corners.top_left)
-        distances[i, 1] = np.linalg.norm(corner - Outsider_corners.top_right)
-        distances[i, 2] = np.linalg.norm(corner - Outsider_corners.bottom_left)
-        distances[i, 3] = np.linalg.norm(corner - Outsider_corners.bottom_right)
-
-    closest_corners_indices = np.argmin(distances, axis=0)
-    if Outsider_corners.calculated is False:
-        #np.any(np.min(distances, axis=1) > Outsider_corners.distance_threshold) or np.any(np.min(distances, axis=0) > Outsider_corners.distance_threshold):
-        print("No found 4 corners")
-    else:
-        top_left = corners[closest_corners_indices[0]]
-        top_right = corners[closest_corners_indices[1]]
-        bottom_left = corners[closest_corners_indices[2]]
-        bottom_right = corners[closest_corners_indices[3]]
-        cv2.circle(image, (int(top_left[0]), int(top_left[1])), 5, (0, 0, 255), thickness=2)
-        cv2.circle(image, (int(top_right[0]), int(top_right[1])), 5, (0, 0, 255), thickness=2)
-        cv2.circle(image, (int(bottom_left[0]), int(bottom_left[1])), 5, (0, 0, 255), thickness=2)
-        cv2.circle(image, (int(bottom_right[0]), int(bottom_right[1])), 5, (0, 0, 255), thickness=2)
-        draw_corners(image, gray, corners)
-
-
 def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, threshold= 0.05, min_ec_distance=20):
     corners = cv2.goodFeaturesToTrack(gray,number_corners,threshold, min_ec_distance, useHarrisDetector=True, k=0.005)
     corners_draw = np.int32(corners)
@@ -137,6 +90,8 @@ def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, 
     #extract_corners(corners_np, img, chessboard_size, gray, len(corners))
     corners_aux = [Outsider_corners.top_left, Outsider_corners.top_right, Outsider_corners.bottom_right, Outsider_corners.bottom_left]
     Outsider_corners.calculated = False
+    print("Making interpolation...")
+
     corners_np, image = interpolate(img,corners_aux,chessboard_size)
     #find_external_corners(corners_np,image,chessboard_size)
 
@@ -159,16 +114,18 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
     ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
     
 
-
     if ret:
-        print("Chessboard corners found.")
-        corners2 = corners_sub_pix(gray,corners,criteria)          
-        cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
-        image = find_external_corners(corners2, image, chessboard_size)
-        corners_aux = [Outsider_corners.top_left, Outsider_corners.top_right, Outsider_corners.bottom_right, Outsider_corners.bottom_left]
-        corners_np, image, = interpolate(image,corners_aux,chessboard_size)
+        print(corners, "Chessboard corners found.", corners.shape, "- ", corners.dtype)
+
+        corners2 = corners# corners_sub_pix(gray,corners,criteria)          
+
+        cv2.drawChessboardCorners(gray, chessboard_size, corners2, ret)
+        #image = find_external_corners(corners2, image, chessboard_size)
+        #corners_aux = [Outsider_corners.top_left, Outsider_corners.top_right, Outsider_corners.bottom_right, Outsider_corners.bottom_left]
+        #corners_np, image, = interpolate(image,corners_aux,chessboard_size)
         see_window("Detected corners automatically", image)
-        return corners_np, image
+        
+        return corners, image
     else:
         
         corners = []
@@ -193,3 +150,52 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
             return corners2, image
 
 
+"""
+def draw_corners(image, gray, corners):
+    #print("MANUAL")
+    corners = np.array(corners, dtype='int32')
+    if Outsider_corners.calculated is True:
+        cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
+        cv2.circle(image, (int(Outsider_corners.bottom_right[0]), int(Outsider_corners.bottom_right[1])), 1, (0, 255, 255), thickness=2)
+ 
+    for i in range(len(corners)):
+        x1, y1 = corners[i].ravel()
+       
+        
+        cv2.circle(image,(x1,y1),3,255,-1)
+        cv2.circle(gray,(x1,y1),3,255,-1)
+
+
+    return image, gray 
+
+def extract_corners (corners, image, chessboard_size, gray, number_corners):
+    
+    #Obtain the nearest point according to Harris.
+    
+    corners = corners.reshape(number_corners, 2)
+
+    distances = np.zeros((number_corners, 4))
+    for i, corner in enumerate(corners):
+        distances[i, 0] = np.linalg.norm(corner - Outsider_corners.top_left)
+        distances[i, 1] = np.linalg.norm(corner - Outsider_corners.top_right)
+        distances[i, 2] = np.linalg.norm(corner - Outsider_corners.bottom_left)
+        distances[i, 3] = np.linalg.norm(corner - Outsider_corners.bottom_right)
+
+    closest_corners_indices = np.argmin(distances, axis=0)
+    if Outsider_corners.calculated is False:
+        #np.any(np.min(distances, axis=1) > Outsider_corners.distance_threshold) or np.any(np.min(distances, axis=0) > Outsider_corners.distance_threshold):
+        print("No found 4 corners")
+    else:
+        top_left = corners[closest_corners_indices[0]]
+        top_right = corners[closest_corners_indices[1]]
+        bottom_left = corners[closest_corners_indices[2]]
+        bottom_right = corners[closest_corners_indices[3]]
+        cv2.circle(image, (int(top_left[0]), int(top_left[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(top_right[0]), int(top_right[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(bottom_left[0]), int(bottom_left[1])), 5, (0, 0, 255), thickness=2)
+        cv2.circle(image, (int(bottom_right[0]), int(bottom_right[1])), 5, (0, 0, 255), thickness=2)
+        draw_corners(image, gray, corners)
+
+"""

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from interpolate import interpolate
-from calibration import calibration, undistort, compute_error
+from calibration import calibrate_camera, undistort, compute_error
 from detect_corners import find_and_draw_chessboard_corners
 from auxiliar import see_window, extract_frames, preprocess_image,background_model, subtract_background, averaging_background_model
 import os
@@ -13,19 +13,55 @@ tile_size = 115
 
 def calibration():
     camera_folders = ["cam1","cam2","cam3","cam4"]
+
+    camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+
+    rows, cols = chessboard_size
+    square_size = 22
+    objpoints = []
+    imgpoints = []
+    objp = np.zeros((rows*cols,3), np.float32)
+    objp[:,:2] = np.mgrid[0:rows,0:cols].T.reshape(-1,2)
+    objp[:,:2]=objp[:,:2]*square_size
+    first_frame = None
+    cont_aux = 0
     for folder in camera_folders:
         intrinsics_video_path = os.path.join('data', folder, 'intrinsics.avi')
         frames = extract_frames(intrinsics_video_path)
         for frame in frames:
-            corners = []
+            if cont_aux > 1:
+                break
+            
             gray, image = preprocess_image(frame,True, [(3,3),0.5], (375,375))
-            see_window("Image", image)
+            if first_frame is None:
+                first_frame = image
             corners2 = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria)
             if corners2 is None:
                 print("Not corners found for this image.")
-            cv2.waitKey(0)
+            else:
+                print("fadsaf", corners2)
+                imgpoints.append(corners2)
+                print("img ", imgpoints)
+                objpoints.append(objp)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                cont_aux += 1
+                
+
+
+        #print(objpoints[0].shape, imgpoints[0].shape)
+        print("Tipo de datos de objpoints:", objpoints[0].dtype)
+       # print("Tipo de datos de imgpoints:", imgpoints)   
+        see_window("asdf", first_frame)
+        cv2.waitKey(0)
+        ret, mtx, dist, rvecs, tvecs = calibrate_camera(objpoints, imgpoints, first_frame)
+        if ret:
+            total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+            cv2.destroyAllWindows()
+
+
 
 
 def subtraction():

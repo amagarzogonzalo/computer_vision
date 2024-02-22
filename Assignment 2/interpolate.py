@@ -74,6 +74,7 @@ def interpolate(image, corners, chessboard_size):
     if len(corners) < 4:
         print("4 corners are needed to do the interpolation. Number of current points: ", len(corners), ".")
         return None, None
+
     cols, rows = chessboard_size  # 9,6
 
     eqpoints_x_above = getEquidistantPoints(corners[0], corners[1], cols + 1)

@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 
-def calibration(objpoints, imgpoints, gray):
+def calibrate_camera(objpoints, imgpoints, gray):
     """
     The function that calculates the calibration.
     :param objpoints: Object points in the real world.
