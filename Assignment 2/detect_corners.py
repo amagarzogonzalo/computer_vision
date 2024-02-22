@@ -175,12 +175,10 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
         if not Outsider_corners.calculated:
 
             print("Chessboard corners not found. Click on four corners.")
-            cv2.setMouseCallback('Image', click_event, corners)
 
             see_window("Click the four corners please.", image)
-            #cv2.destroyAllWindows()
+            cv2.setMouseCallback('Click the four corners please.', click_event, (corners, image))
             cv2.waitKey(0)
-            print("selected corners: ", corners)
             corners, image = interpolate(image, corners, chessboard_size)
             if corners is None or image is None:
                 return None

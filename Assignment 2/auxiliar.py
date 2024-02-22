@@ -33,7 +33,7 @@ def extract_frames(video_path, interval=10):
     cap.release()
     return frames
 
-def click_event(event, x, y, flags, image, param):
+def click_event(event, x, y, flags, param):
     """
     Handle mouse click events.
 
@@ -43,11 +43,10 @@ def click_event(event, x, y, flags, image, param):
     :param flags: Any flags passed with the event.
     :param param: Additional parameters passed to the function.
     """
-    print("...")
+    #print("...")
     if event == cv2.EVENT_LBUTTONDOWN:
-        print("clickkk")
-        print(x, ' ', y)
-        #cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
+        #print(x, ' ', y)
+        cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
         #see_window('Image selecting points', param[1])
         aux = x, y
         param[0].append(aux)
