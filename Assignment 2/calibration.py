@@ -27,10 +27,11 @@ def calibrate_camera(objpoints, imgpoints, gray):
     flags = cv2.CALIB_FIX_FOCAL_LENGTH
 
     modify_focal_length = False
+    row, cols, _ = gray.shape[::-1]
     if modify_focal_length:
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], mtx, flags)
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (row,cols), mtx, flags)
     else:
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (row,cols), None, None)
 
     return ret, mtx, dist, rvecs, tvecs
 

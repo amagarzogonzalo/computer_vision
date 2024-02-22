@@ -41,9 +41,10 @@ def calibration():
             if corners2 is None:
                 print("Not corners found for this image.")
             else:
-                print("fadsaf", corners2)
-                imgpoints.append(corners2)
-                print("img ", imgpoints)
+                if len(corners2) == 2:
+                    imgpoints.append(corners2[0])
+                else:
+                    imgpoints.append(corners2)
                 objpoints.append(objp)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
@@ -51,10 +52,7 @@ def calibration():
                 
 
 
-        #print(objpoints[0].shape, imgpoints[0].shape)
-        print("Tipo de datos de objpoints:", objpoints[0].dtype)
-       # print("Tipo de datos de imgpoints:", imgpoints)   
-        see_window("asdf", first_frame)
+    
         cv2.waitKey(0)
         ret, mtx, dist, rvecs, tvecs = calibrate_camera(objpoints, imgpoints, first_frame)
         if ret:

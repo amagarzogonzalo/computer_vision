@@ -212,6 +212,7 @@ def run(select_run, optimize_image, kernel_params, canny_params, webcam, video):
        
         corners2 = find_and_draw_chessboard_corners(img, chessboard_size, criteria) 
         if corners2 is not None and len(corners2) > 0: 
+            print(corners2.dtype, "FDSafd", corners2.shape, "-", corners2)
             imgpoints.append(corners2)
             objpoints.append(objp)
             cv2.waitKey(0)

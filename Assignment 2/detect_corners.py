@@ -112,20 +112,17 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
     :return: The refined corners.
     """
     ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
-    
+    #print(corners.shape, "first shape")
 
     if ret:
-        print(corners, "Chessboard corners found.", corners.shape, "- ", corners.dtype)
+        print("Chessboard corners found.")
 
-        corners2 = corners# corners_sub_pix(gray,corners,criteria)          
+        corners2 = corners_sub_pix(gray,corners,criteria)          
+        image = find_external_corners(corners2, image, chessboard_size)
 
-        cv2.drawChessboardCorners(gray, chessboard_size, corners2, ret)
-        #image = find_external_corners(corners2, image, chessboard_size)
-        #corners_aux = [Outsider_corners.top_left, Outsider_corners.top_right, Outsider_corners.bottom_right, Outsider_corners.bottom_left]
-        #corners_np, image, = interpolate(image,corners_aux,chessboard_size)
+        cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
         see_window("Detected corners automatically", image)
-        
-        return corners, image
+        return corners2, image
     else:
         
         corners = []
