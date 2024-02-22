@@ -12,7 +12,7 @@ def see_window(window_name, image):
     cv2.resizeWindow(window_name, 650, 650)
     cv2.imshow(window_name, image)
 
-def extract_frames(video_path, interval=15):
+def extract_frames(video_path, interval=10):
     """
     Extracts frames from a video file every 'interval' frames.
     :param videopath: Path of the video.
@@ -33,7 +33,7 @@ def extract_frames(video_path, interval=15):
     cap.release()
     return frames
 
-def click_event(event, x, y, flags, param):
+def click_event(event, x, y, flags, image, param):
     """
     Handle mouse click events.
 
@@ -43,8 +43,10 @@ def click_event(event, x, y, flags, param):
     :param flags: Any flags passed with the event.
     :param param: Additional parameters passed to the function.
     """
+    print("...")
     if event == cv2.EVENT_LBUTTONDOWN:
-        #print(x, ' ', y)
+        print("clickkk")
+        print(x, ' ', y)
         #cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
         #see_window('Image selecting points', param[1])
         aux = x, y

@@ -46,5 +46,5 @@ def subtraction():
 
 
 
-subtraction()
-#calibration()
+#subtraction()
+calibration()

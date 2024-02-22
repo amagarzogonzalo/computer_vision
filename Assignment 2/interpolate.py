@@ -72,7 +72,7 @@ def interpolate(image, corners, chessboard_size):
     :return: A tuple containing the modified corner points as a NumPy array and the annotated image.
     """
     if len(corners) < 4:
-        print("4 corners are needed to do the interpolation.")
+        print("4 corners are needed to do the interpolation. Number of current points: ", len(corners), ".")
         return None, None
     cols, rows = chessboard_size  # 9,6
 
