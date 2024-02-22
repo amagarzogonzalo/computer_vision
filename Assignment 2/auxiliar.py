@@ -12,7 +12,7 @@ def see_window(window_name, image):
     cv2.resizeWindow(window_name, 650, 650)
     cv2.imshow(window_name, image)
 
-def extract_frames(video_path, interval=10):
+def extract_frames(video_path, interval):
     """
     Extracts frames from a video file every 'interval' frames.
     :param videopath: Path of the video.
@@ -46,7 +46,7 @@ def click_event(event, x, y, flags, param):
     #print("...")
     if event == cv2.EVENT_LBUTTONDOWN:
         #print(x, ' ', y)
-        cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
+        #cv2.circle(param[1], (x, y), 3, (255, 0, 0), -1)
         #see_window('Image selecting points', param[1])
         aux = x, y
         param[0].append(aux)

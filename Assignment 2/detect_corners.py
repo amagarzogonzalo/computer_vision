@@ -60,7 +60,7 @@ def find_external_corners(corners, image, chessboard_size):
     Outsider_corners.bottom_right = ((bottom_right[0]+(-bottom_right_left[0]+bottom_right[0])+(-bottom_right_above[0]+bottom_right[0]),   (bottom_right[1]+(-bottom_right_above[1]+bottom_right[1])))
     """
     #print("BR: ", bottom_right_above, bottom_right_left, bottom_right, "res: ", Outsider_corners.bottom_right)
-
+    #TODO comment
     cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
     cv2.circle(image, (int(Outsider_corners.top_right[0]), int(Outsider_corners.top_right[1])), 1, (0, 255, 255), thickness=2)
     cv2.circle(image, (int(Outsider_corners.bottom_left[0]), int(Outsider_corners.bottom_left[1])), 1, (0, 255, 255), thickness=2)
@@ -86,6 +86,7 @@ def find_external_corners(corners, image, chessboard_size):
 def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, threshold= 0.05, min_ec_distance=20):
     corners = cv2.goodFeaturesToTrack(gray,number_corners,threshold, min_ec_distance, useHarrisDetector=True, k=0.005)
     corners_draw = np.int32(corners)
+    print("Detecting corners automatically...")
     corners_np = np.float32(corners)
     #extract_corners(corners_np, img, chessboard_size, gray, len(corners))
     corners_aux = [Outsider_corners.top_left, Outsider_corners.top_right, Outsider_corners.bottom_right, Outsider_corners.bottom_left]
@@ -100,7 +101,7 @@ def detect_corners_automatically(gray, img, chessboard_size, number_corners=63, 
     #img, gray = draw_corners(img, gray, corners_draw)
     return True, corners_np, img  
 
-def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
+def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, interval):
     """
     Find and draw chessboard corners on the image.
 
@@ -109,6 +110,7 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
     :param image: The input image.    
     :param chessboard_size: The size of the chessboard.
     :param criteria: Criteria for corner refinement.
+    :param interval: Interval of the frames received.
     :return: The refined corners.
     """
     ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
@@ -124,9 +126,11 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
         see_window("Detected corners automatically", image)
         return corners2, image
     else:
-        
+        skip_manual = False # just for testing
+        if skip_manual:
+            return None, None
         corners = []
-        if not Outsider_corners.calculated:
+        if not Outsider_corners.calculated or interval >= 30: #if the interval is too high it wont work well the automatic corners
 
             print("Chessboard corners not found. Click on four corners.")
 
@@ -136,7 +140,8 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria):
             corners, image = interpolate(image, corners, chessboard_size)
             if corners is None or image is None:
                 return None
-            corners2 = corners_sub_pix(gray,corners,criteria)            
+            corners2 = corners_sub_pix(gray,corners,criteria) 
+            print("Corners found after intrapolation and manually selected corners.")           
             see_window("Result with Interpolation", image)
             return corners2, image
         else:

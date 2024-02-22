@@ -13,7 +13,7 @@ tile_size = 115
 
 def calibration():
     camera_folders = ["cam1","cam2","cam3","cam4"]
-
+    interval = 10
     camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -29,15 +29,15 @@ def calibration():
     cont_aux = 0
     for folder in camera_folders:
         intrinsics_video_path = os.path.join('data', folder, 'intrinsics.avi')
-        frames = extract_frames(intrinsics_video_path)
+        frames = extract_frames(intrinsics_video_path, interval)
         for frame in frames:
-            if cont_aux > 1:
+            if cont_aux > 17:
                 break
             
             gray, image = preprocess_image(frame,True, [(3,3),0.5], (375,375))
             if first_frame is None:
                 first_frame = image
-            corners2 = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria)
+            corners2 = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, interval)
             if corners2 is None:
                 print("Not corners found for this image.")
             else:
