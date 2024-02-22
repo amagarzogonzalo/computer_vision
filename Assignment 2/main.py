@@ -20,7 +20,7 @@ def calibration():
         frames = extract_frames(intrinsics_video_path)
         for frame in frames:
             corners = []
-            gray, image = preprocess_image(frame,False, [(3,3),0.5], (375,375))
+            gray, image = preprocess_image(frame,True, [(3,3),0.5], (375,375))
             see_window("Image", image)
             corners2 = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria)
             if corners2 is None:
