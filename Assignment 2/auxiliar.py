@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from skimage.filters import threshold_multiotsu
+import os
 def see_window(window_name, image):
     """
     Display an image in a resizable window.
@@ -88,6 +89,17 @@ def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds)
     else:
         img = cv2.cvtColor(image_aux, cv2.COLOR_BGR2GRAY)
         return img, image_aux
+
+
+def save_intrinsics(mtx, rvecs, tvecs, dist):
+    config_path = os.path.join('data/camX/', "intrinsics.xml")
+    fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_WRITE)
+    fs.write('mtx', mtx)
+    fs.write('rvecs', rvecs)
+    fs.write('tvecs', tvecs)
+    fs.write('dist', dist)
+
+    fs.release()
 
 def averaging_background_model(video_path):
 
