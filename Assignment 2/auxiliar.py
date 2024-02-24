@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import os
+from skimage.filters import threshold_multiotsu
+
 
 def see_window(window_name, image):
     """
