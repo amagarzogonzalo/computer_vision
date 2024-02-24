@@ -157,7 +157,6 @@ def subtract_background(frame, background_model):
     kernel = np.ones((5, 5), np.uint8)
     combined_mask = cv2.erode(combined_mask, kernel, iterations=1)
     combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
-    #cv2.imshow("Dilation", dilation)
 
     # Find contours and fill the largest one
     contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)

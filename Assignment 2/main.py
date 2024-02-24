@@ -121,7 +121,7 @@ def subtraction():
             #processed_frame = mog2_method(background_path, video_path)
 
             #avergage fram method
-            processed_frame = subtract_background(frame, averaging_background_model(video_path))
+            processed_frame = subtract_background(frame, averaging_background_model(background_path))
             cv2.imshow('Foreground', processed_frame)
             if cv2.waitKey(0):
                 break
@@ -129,8 +129,8 @@ def subtraction():
 
 
 
-#subtraction()
-total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
+subtraction()
+#total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
 #camera_extrinsic(mtx=None,dist=None, rvec=None, tvec=None)
-mtx, dist, rvecs, tvecs = get_intrinsics()
-camera_extrinsic(mtx, dist, rvecs, tvecs)
+#mtx, dist, rvecs, tvecs = get_intrinsics()
+#camera_extrinsic(mtx, dist, rvecs, tvecs)
