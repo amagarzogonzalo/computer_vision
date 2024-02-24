@@ -15,7 +15,7 @@ def camera_intrinsic():
     frames_per_folder = 3
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
-    #camera_folders = ["cam3", "cam4"]
+    camera_folders = ["cam1", "cam2"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
@@ -98,10 +98,9 @@ def camera_extrinsic(mtx, dist, rvec, tvec):
             axis_points, _ = cv2.projectPoints(axis2*15,rvecs,tvecs,mtx,dist)
             axis_points = np.round(axis_points).astype(int)
     
-            
-            colours = [(255, 0, 0), (0, 0, 255), (0, 255, 0)]
+        
             for i in range(3):
-                image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), (colours[i], colours[i], colours[i])[i], 3)
+                image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 3)
             see_window("Axis", image)
             save_intrinsics(mtx,rvecs,tvecs,dist)
             
