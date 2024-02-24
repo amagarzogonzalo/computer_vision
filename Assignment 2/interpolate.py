@@ -96,7 +96,6 @@ def interpolate(image, corners, chessboard_size):
 
     axuiliar_warped = cv2.warpPerspective(image, matrix, (width, height))
     corners = dst_points
-    print("corners: ", corners)
     eqpoints_x_above = getEquidistantPoints(corners[0], corners[1], rows + 1)
     eqpoints_x_bellow = getEquidistantPoints(corners[3], corners[2], rows + 1)
     eqpoints_y_left = getEquidistantPoints(corners[0], corners[3], cols+ 1)
@@ -104,7 +103,6 @@ def interpolate(image, corners, chessboard_size):
     eqpoints_y_right = getEquidistantPoints(corners[1], corners[2], cols+ 1)
     eqpoints_y_right = eqpoints_y_right[1:-1]
     auxiliar_line_horizontal = []
-    print(eqpoints_x_above)
 
     for i in range(len(eqpoints_y_left)):
         cv2.circle(axuiliar_warped, (int(eqpoints_y_left[i][0]), int(eqpoints_y_left[i][1])), 10, (0, 255, 0))
@@ -132,13 +130,8 @@ def interpolate(image, corners, chessboard_size):
     #cv2.waitKey(0)
     corners_original_image = cv2.perspectiveTransform(corners_np, np.linalg.inv(matrix))
 
-    print("new size corners", corners_original_image.shape)
 
     corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)
-
-    print("new size corners", corners_original_image.shape)
-
-
 
     square_size = 22
     objpoints = []
@@ -155,5 +148,5 @@ def interpolate(image, corners, chessboard_size):
     print("Total error auxiliar:::")
     total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
     image_after_painting =draw_corners_after_transforming(image, corners_original_image)
-    see_window("WORKS?", image_after_painting)
+    #see_window("WORKS?", image_after_painting)
     return corners_original_image, image_after_painting

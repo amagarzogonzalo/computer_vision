@@ -3,7 +3,7 @@ import numpy as np
 from interpolate import interpolate
 from calibration import calibrate_camera, undistort, compute_error
 from detect_corners import find_and_draw_chessboard_corners, detect_corners_automatically, draw_corners, detect_corners_for_extrinsic
-from auxiliar import see_window, extract_frames, preprocess_image,background_model, subtract_background, averaging_background_model, save_intrinsics
+from auxiliar import see_window, extract_frames, preprocess_image,background_model, subtract_background, averaging_background_model, save_intrinsics, get_intrinsics
 import os
 from os import listdir
 
@@ -12,10 +12,10 @@ tile_size = 115
 
 
 def camera_intrinsic():
-    frames_per_folder = 1
+    frames_per_folder = 20
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
-    camera_folders = ["cam1"]
+    #camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
@@ -61,7 +61,7 @@ def camera_intrinsic():
 def camera_extrinsic(mtx, dist, rvec, tvec):
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
-    camera_folders = ["cam1"]
+    #camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     rows, cols = chessboard_size
     square_size = 22
@@ -82,30 +82,20 @@ def camera_extrinsic(mtx, dist, rvec, tvec):
         corners2, image = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, interval, do_manual=True, skip_manual=False)
         if corners2 is None or image is None:
             print("Not corners found for this image.")
+            break
         else:
-            see_window("Interpolation done.", image)
-            cv2.waitKey(0)
             print("Rotating.")
             ret, rvecs, tvecs = cv2.solvePnP(objp, corners2, mtx, dist)
             corners3 = corners2.astype(int)
-
             square_size = 4  # Size of a chessboard square in mm
-            #for axis lines
             size_of_axis = square_size*3
-            #axis2 = np.float32([[0,0,0],[square_size*3,0,0],[0,square_size*3,0],[0,0,square_size*-3]])
-
             axis2 = np.float32([[size_of_axis,0,0],[0,size_of_axis,0],[0,0,-size_of_axis],[0,0,0]])
             axis_points, _ = cv2.projectPoints(axis2*15,rvecs,tvecs,mtx,dist)
-            axis_points = np.round(axis_points).astype(int)
-    
-        
+            axis_points = np.round(axis_points).astype(int)  
             for i in range(3):
                 image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 3)
-            see_window("Axis", image)
+            see_window("Axis.", image)
             save_intrinsics(mtx,rvecs,tvecs,dist)
-            
-            
-            
             cv2.waitKey(0)
 
 def subtraction():
@@ -127,6 +117,7 @@ def subtraction():
 
 
 #subtraction()
-total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
+#total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
 #camera_extrinsic(mtx=None,dist=None, rvec=None, tvec=None)
+mtx, dist, rvecs, tvecs = get_intrinsics()
 camera_extrinsic(mtx,dist, rvecs, tvecs)
