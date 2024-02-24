@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from skimage.filters import threshold_multiotsu
 def see_window(window_name, image):
     """
     Display an image in a resizable window.
@@ -209,5 +209,7 @@ def mog2_method(background_path='background.avi', foreground_path = 'video.avi',
     cap.release()
 
     return final_mask
+
+
 
 
