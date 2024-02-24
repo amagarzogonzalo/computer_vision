@@ -3,7 +3,7 @@ import numpy as np
 from interpolate import interpolate
 from calibration import calibrate_camera, undistort, compute_error
 from detect_corners import find_and_draw_chessboard_corners, detect_corners_automatically, draw_corners, detect_corners_for_extrinsic
-from auxiliar import see_window, extract_frames, preprocess_image, mog2_method, subtract_background, averaging_background_model, save intrinsics
+from auxiliar import see_window, extract_frames, preprocess_image, mog2_method, subtract_background, averaging_background_model, save_intrinsics, get_intrinsics
 import os
 from os import listdir
 
@@ -12,10 +12,10 @@ tile_size = 115
 
 
 def camera_intrinsic():
-    frames_per_folder = 1
+    frames_per_folder = 25
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
-    camera_folders = ["cam1"]
+    #camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
@@ -132,4 +132,5 @@ def subtraction():
 #subtraction()
 total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
 #camera_extrinsic(mtx=None,dist=None, rvec=None, tvec=None)
-camera_extrinsic(mtx,dist, rvecs, tvecs)
+mtx, dist, rvecs, tvecs = get_intrinsics()
+camera_extrinsic(mtx, dist, rvecs, tvecs)

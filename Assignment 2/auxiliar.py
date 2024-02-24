@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 
 def see_window(window_name, image):
     """
@@ -49,6 +50,18 @@ def click_event(event, x, y, flags, param):
         #see_window('Image selecting points', param[1])
         aux = x, y
         param[0].append(aux)
+
+def save_intrinsics(mtx, rvecs, tvecs, dist):
+   
+    config_path = os.path.join('data/camX/', "intrinsics.xml")
+    fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_WRITE)
+    fs.write('mtx', mtx)
+    fs.write('rvecs', rvecs)
+    fs.write('tvecs', tvecs)
+    fs.write('dist', dist)
+    print("Intrinsics saved succesfully.")
+    fs.release()
+
 
 
 def get_intrinsics():
