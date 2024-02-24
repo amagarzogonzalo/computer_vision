@@ -12,6 +12,7 @@ tile_size = 115
 
 
 def camera_intrinsic():
+    frames_per_folder = 3
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam3", "cam4"]
@@ -46,7 +47,7 @@ def camera_intrinsic():
                     imgpoints.append(corners2)
                 objpoints.append(objp)
                 cont_aux += 1
-                if cont_aux > 9:
+                if cont_aux > frames_per_folder-1:
                     break
           
     #cv2.waitKey(0)
@@ -98,7 +99,7 @@ def camera_extrinsic(mtx, dist, rvec, tvec):
             axis_points = np.round(axis_points).astype(int)
     
             
-            colours = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+            colours = [(255, 0, 0), (0, 0, 255), (0, 255, 0)]
             for i in range(3):
                 image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), (colours[i], colours[i], colours[i])[i], 3)
             see_window("Axis", image)

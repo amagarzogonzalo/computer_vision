@@ -54,15 +54,14 @@ def click_event(event, x, y, flags, param):
 
 def save_intrinsics(mtx, rvecs, tvecs, dist):
 
-    intrinsics_data = {
-        "mtx": mtx.tolist(),
-        "dist": dist.tolist(),
-        "rvecs": [rvec.tolist() for rvec in rvecs],
-        "tvecs": [tvec.tolist() for tvec in tvecs]
-    }
+   
     config_path = os.path.join('data/camX/', "intrinsics.xml")
     fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_WRITE)
-    fs.write("intrinsics", intrinsics_data)
+    fs.write('mtx', mtx)
+    fs.write('rvecs', rvecs)
+    fs.write('tvecs', tvecs)
+    fs.write('dist', dist)
+
     fs.release()
 
 def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
