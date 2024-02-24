@@ -3,7 +3,7 @@ import numpy as np
 from interpolate import interpolate
 from calibration import calibration, undistort, compute_error
 from detect_corners import find_and_draw_chessboard_corners
-from auxiliar import see_window, extract_frames, preprocess_image,background_model, subtract_background, averaging_background_model
+from auxiliar import see_window, extract_frames, preprocess_image,mog2_method, subtract_background, averaging_background_model
 import os
 from os import listdir
 
@@ -36,15 +36,23 @@ def subtraction():
         background_path = os.path.join('data',folder,'background.avi')
         video_path = os.path.join('data',folder,'video.avi')
         frames = extract_frames(video_path,interval = 1)
+        '''
+        processed_frame = mog2_method(background_path, video_path)
+        cv2.imshow('Foreground', processed_frame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        '''
         for frame in frames:
-            #processed_frame = subtract_background(frame,background_model(background_path))
-            processed_frame = subtract_background(frame, averaging_background_model(video_path))
+            #MOG2 method
+            #processed_frame = mog2_method(background_path, video_path)
+
+            #Average Framing Method
+            processed_frame = subtract_background(frame,averaging_background_model(background_path))
             cv2.imshow('Foreground', processed_frame)
             if cv2.waitKey(0):
                 break
         cv2.destroyAllWindows()
-
-
+        
 
 subtraction()
 #calibration()
