@@ -151,7 +151,7 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, int
                 return None
             corners2 = corners_sub_pix(gray,corners,criteria) 
             print("Corners found after intrapolation and manually selected corners.")           
-            see_window("Result with Interpolation", image)
+            #see_window("Result with Interpolation", image)
             return corners2, image
         else:
             done, corners, image = detect_corners_automatically(gray, image, chessboard_size)

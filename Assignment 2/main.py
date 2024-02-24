@@ -12,10 +12,10 @@ tile_size = 115
 
 
 def camera_intrinsic():
-    frames_per_folder = 3
+    frames_per_folder = 1
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
-    camera_folders = ["cam1", "cam2"]
+    camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 
