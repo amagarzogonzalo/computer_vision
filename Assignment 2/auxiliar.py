@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from skimage.filters import threshold_multiotsu
 
 def see_window(window_name, image):
     """
@@ -85,10 +84,12 @@ def averaging_background_model(video_path):
         ret, frame = cap.read()
         if ret:
             frames.append(frame)
+
     # Compute the average of frames if the list is not empty
     if frames:
+        # Convert the list of frames to a 4D array and compute the average along the first axis
         avg_frame = np.mean(np.array(frames, dtype=np.float32), axis=0).astype(dtype=np.uint8)
-
+        # Save the average frame as the background model
         #cv2.imwrite('background_model.jpg', avg_frame)
     else:
         print("No frames to process.")
@@ -99,101 +100,54 @@ def averaging_background_model(video_path):
     return avg_frame
 
 
-def subtract_background(frame, background_model):
+def background_model(video_path='background.avi', history=500, varThreshold=25, detectShadows=True):
+    #MOG2 method
 
-    # Convert frame to HSV
-    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Convert background
-    hsv_background = cv2.cvtColor(background_model, cv2.COLOR_BGR2HSV)
-    # Calculate the absolute difference
-    diff = cv2.absdiff(hsv_frame, hsv_background)
-    print(f'diff: {diff}')
-
-    # Thresholds
-    hue_thresh = 100
-    sat_thresh = 30
-    val_thresh = 25
-
-    # Apply thresholding
-    _, hue_thresh = cv2.threshold(diff[:, :, 0], hue_thresh, 255, cv2.THRESH_BINARY)
-    _, sat_thresh = cv2.threshold(diff[:, :, 1], sat_thresh, 255, cv2.THRESH_BINARY)
-    _, val_thresh = cv2.threshold(diff[:, :, 2], val_thresh, 255, cv2.THRESH_BINARY)
-
-    # Combine the thresholds to determine foreground (use bitwise operations)
-    combined_mask = cv2.bitwise_or(hue_thresh, cv2.bitwise_or(sat_thresh, val_thresh))
-    cv2.imshow("combined_mask",combined_mask)
-
-    # Post-processing
-    kernel = np.ones((5, 5), np.uint8)
-    combined_mask = cv2.erode(combined_mask, kernel, iterations=1)
-    combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
-    #cv2.imshow("Dilation", dilation)
-
-    # Find contours and fill the largest one
-    contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if contours:
-        max_contour = max(contours, key=cv2.contourArea)
-        foreground_mask = np.zeros_like(frame)
-        cv2.drawContours(foreground_mask, [max_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
-        #cv2.imshow("Foreground Mask", foreground_mask)
-    else:
-        foreground_mask = np.zeros_like(frame)
-
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    return foreground_mask
-
-def mog2_method(background_path='background.avi', foreground_path = 'video.avi',history=100, varThreshold=16, detectShadows=True):
-
-    cap = cv2.VideoCapture(background_path)
-    cap2 = cv2.VideoCapture(foreground_path)
+    cap = cv2.VideoCapture(video_path)
     fgbg = cv2.createBackgroundSubtractorMOG2(history=history, varThreshold=varThreshold, detectShadows=detectShadows)
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-        _ = fgbg.apply(frame, learningRate=0.01)
+        fgmask = fgbg.apply(frame)
 
-    count = 0
-    while True:
-        ret, frame = cap2.read()
-        if not ret:
-            break
-        bg_model = fgbg.apply(frame, learningRate=0)
 
-        threshold = threshold_multiotsu(bg_model)
-
-        bg_model2 = cv2.threshold(bg_model,threshold[1],255,cv2.THRESH_BINARY)[1]
-
-        # Find the contours in the binary mask
-        contours, hierarchy = cv2.findContours(bg_model2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        # Find the contour with the maximum area
-        max_area = 0
-        max_contour = None
-        for contour in contours:
-            area = cv2.contourArea(contour)
-            if area > max_area:
-                max_area = area
-                max_contour = contour
-
-        # Create a blank image to draw the contour on
-        final_mask = np.zeros_like(frame)
-
-        # Draw the contour with the maximum area on the new mask
-        cv2.drawContours(final_mask, [max_contour], -1, (255, 255, 255), cv2.FILLED)
-
-        frame = cv2.bitwise_and(frame, final_mask)
-
-        cv2.imshow('Foreground', frame)
-
-        # Release the camera and close all windows
-    cap2.release()
-    cv2.destroyAllWindows()
     cap.release()
+    return fgmask
 
-    return final_mask
+
+def subtract_background(frame, background_model):
+    # Convert frame to HSV
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # Convert back
+    hsv_background = cv2.cvtColor(background_model, cv2.COLOR_BGR2HSV)
+    # Calculate the absolute difference
+    diff = cv2.absdiff(hsv_frame, hsv_background)
+
+    print(f'diff: {diff}')
+
+    # Thresholds
+    # These thresholds should be determined based on your method of choice
+   # hue_thresh = 100
+    #sat_thresh = 0
+    #val_thresh = 0
+
+    # Apply thresholding
+  #  _, hue_thresh = cv2.threshold(diff[:, :, 0], hue_thresh, 255, cv2.THRESH_BINARY)
+   # _, sat_thresh = cv2.threshold(diff[:, :, 1], sat_thresh, 255, cv2.THRESH_BINARY)
+    #_, val_thresh = cv2.threshold(diff[:, :, 2], val_thresh, 255, cv2.THRESH_BINARY)
+
+    # Combine the thresholds to determine foreground (use bitwise operations)
+    #combined_mask = cv2.bitwise_and(hue_thresh, cv2.bitwise_and(sat_thresh, val_thresh))
+
+    # Post-processing
+    #kernel = np.ones((5, 5), np.uint8)
+    #erosion = cv2.erode(combined_mask, kernel, iterations=1)
+    #erosion = cv2.erode(diff, kernel, iterations=1)
+    #dilation = cv2.dilate(erosion, kernel, iterations=1)
+
+    return diff
 
 
 
