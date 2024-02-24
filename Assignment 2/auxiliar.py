@@ -51,6 +51,22 @@ def click_event(event, x, y, flags, param):
         param[0].append(aux)
 
 
+def get_intrinsics():
+    config_path = os.path.join('data/camX/', "intrinsics.xml")
+    fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_READ)
+
+    if not fs.isOpened():
+        print("Error: Failed to open intrinsics file.")
+        return None
+
+    mtx = fs.getNode('mtx').mat()
+    rvecs = fs.getNode('rvecs').mat()
+    tvecs = fs.getNode('tvecs').mat()
+    dist = fs.getNode('dist').mat()
+    fs.release()
+
+    return mtx, dist, rvecs, tvecs
+
 def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
     """
     Preprocess the input image based on the specified parameters.
