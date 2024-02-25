@@ -12,7 +12,7 @@ tile_size = 115
 
 
 def camera_intrinsic():
-    frames_per_folder = 1
+    frames_per_folder = 10000
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam1"]
@@ -58,7 +58,7 @@ def camera_intrinsic():
         return total_error, mtx,dist, rvecs,tvecs
 
 
-def camera_extrinsic(mtx, dist, rvec, tvec):
+def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= True):
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam1"]
@@ -98,7 +98,8 @@ def camera_extrinsic(mtx, dist, rvec, tvec):
             for i in range(3):
                 image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 3)
             see_window("Image with axis.", image)
-            save_intrinsics(mtx,rvecs,tvecs,dist)
+            if save_intrinsic_data:
+                save_intrinsics(mtx,rvecs,tvecs,dist)
             
             
             
