@@ -36,6 +36,7 @@ def extract_frames(video_path, interval=15):
     cap.release()
     return frames
 
+
 def click_event(event, x, y, flags, param):
     """
     Handle mouse click events.
@@ -53,9 +54,9 @@ def click_event(event, x, y, flags, param):
         aux = x, y
         param[0].append(aux)
 
-def save_intrinsics(mtx, rvecs, tvecs, dist):
+def save_intrinsics(mtx, rvecs, tvecs, dist, folder):
    
-    config_path = os.path.join('data/camX/', "intrinsics.xml")
+    config_path = os.path.join('data', folder, "intrinsics.xml")
     fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_WRITE)
     fs.write('mtx', mtx)
     fs.write('rvecs', rvecs)
@@ -66,8 +67,8 @@ def save_intrinsics(mtx, rvecs, tvecs, dist):
 
 
 
-def get_intrinsics():
-    config_path = os.path.join('data/camX/', "intrinsics.xml")
+def get_intrinsics(folder):
+    config_path = os.path.join('data',folder, "intrinsics.xml")
     fs = cv2.FileStorage(config_path, cv2.FILE_STORAGE_READ)
 
     if not fs.isOpened():

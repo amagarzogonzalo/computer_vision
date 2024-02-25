@@ -6,6 +6,7 @@ from detect_corners import find_and_draw_chessboard_corners, detect_corners_auto
 from auxiliar import see_window, extract_frames, preprocess_image, mog2_method, subtract_background, averaging_background_model, save_intrinsics, get_intrinsics
 import os
 from os import listdir
+from assignment import set_voxel_positions
 
 chessboard_size = 6,8
 tile_size = 115
@@ -58,9 +59,11 @@ def camera_intrinsic():
         return total_error, mtx,dist, rvecs,tvecs
 
 
-def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= False):
+def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= False, save_intrinsic_data= True):
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
+    #camera_folders = ["cam1","cam1","cam1","cam1", "cam1"]
+
     #camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     rows, cols = chessboard_size
@@ -72,6 +75,8 @@ def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= False):
     objp[:,:2]=objp[:,:2]*square_size
     first_frame = None
     for folder in camera_folders:
+        if use_intrinsics:
+            mtx,dist, rvecs,tvecs = get_intrinsics(folder)
         cont_aux = 0
         print("Checking folder: ", folder)
         intrinsics_video_path = os.path.join('data', folder, 'checkerboard.avi')
@@ -96,10 +101,10 @@ def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= False):
     
         
             for i in range(3):
-                image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 3)
+                image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 4)
             see_window("Image with axis.", image)
             if save_intrinsic_data:
-                save_intrinsics(mtx,rvecs,tvecs,dist)
+                save_intrinsics(mtx,rvecs,tvecs,dist, folder)
             
             
             
@@ -124,11 +129,9 @@ def subtraction():
                 break
         cv2.destroyAllWindows()
 
-
-
 #subtraction()
-#total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
-mtx, dist, rvecs, tvecs = get_intrinsics()
+total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
 
 camera_extrinsic(mtx,dist, rvecs, tvecs)
 #camera_extrinsic(mtx, dist, rvecs, tvecs)
+        
