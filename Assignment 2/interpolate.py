@@ -133,6 +133,11 @@ def interpolate(image, corners, chessboard_size):
 
     corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)
 
+    
+    image_after_painting =draw_corners_after_transforming(image, corners_original_image)
+
+
+    """
     square_size = 22
     objpoints = []
     imgpoints = []
@@ -141,12 +146,9 @@ def interpolate(image, corners, chessboard_size):
     objp[:,:2]=objp[:,:2]*square_size
     objpoints.append(objp)
     imgpoints.append(corners_original_image)
-
-
     ret, mtx, dist, rvecs, tvecs = calibrate_camera(objpoints, imgpoints, image)
     see_window("SUPER AUX", image)
     print("Total error auxiliar:::")
     total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
-    image_after_painting =draw_corners_after_transforming(image, corners_original_image)
-    #see_window("WORKS?", image_after_painting)
+    #see_window("WORKS?", image_after_painting)"""
     return corners_original_image, image_after_painting
