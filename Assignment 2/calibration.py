@@ -70,6 +70,7 @@ def compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist):
     :param dist: The distortion coefficients.
     :return: The total error.
     """
+    print("Calculating the error.")
     mean_error = 0
     for i in range(len(objpoints)):
         imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)

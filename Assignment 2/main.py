@@ -12,9 +12,9 @@ tile_size = 115
 
 
 def camera_intrinsic():
-    frames_per_folder = 10000
+    frames_per_folder = 30
     camera_folders = ["cam1","cam2","cam3","cam4"]
-    interval = 10
+    interval = 30
     #camera_folders = ["cam1"]
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
@@ -58,7 +58,7 @@ def camera_intrinsic():
         return total_error, mtx,dist, rvecs,tvecs
 
 
-def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= True):
+def camera_extrinsic(mtx, dist, rvec, tvec, save_intrinsic_data= False):
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam1"]
@@ -127,7 +127,8 @@ def subtraction():
 
 
 #subtraction()
-total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
+#total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
+mtx, dist, rvecs, tvecs = get_intrinsics()
+
 camera_extrinsic(mtx,dist, rvecs, tvecs)
-#mtx, dist, rvecs, tvecs = get_intrinsics()
 #camera_extrinsic(mtx, dist, rvecs, tvecs)
