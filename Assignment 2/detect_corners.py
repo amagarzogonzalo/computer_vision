@@ -158,7 +158,7 @@ def method_detect_corners_automatically(image, processed_frame, chessboard_size,
     corners = approx.reshape(-1, 2)
 
     ordered_corners = order_corners_aux(corners)
-    final_corners = obtain_inner_corners(ordered_corners, image)
+    final_corners = obtain_inner_corners(ordered_corners, image, chessboard_size, criteria)
     corners, image = interpolate(image, final_corners, chessboard_size)
     if corners is None or image is None:
         return None, None
@@ -209,7 +209,7 @@ def order_corners_aux(corners):
 
     return ordered_corners
 
-def obtain_inner_corners(corners, image):
+def obtain_inner_corners(corners, image, chessboard_size, criteria):
 
     """
     Obtain inner corners for the interpolation.
@@ -217,7 +217,7 @@ def obtain_inner_corners(corners, image):
     :param image: Image for shape.
     return: Ordered corners
     """
-
+    original_corners = corners
     height, width, _ = image.shape
 
 
@@ -228,20 +228,36 @@ def obtain_inner_corners(corners, image):
     auxiliar_warped = cv2.warpPerspective(image, matrix, (width, height))
     for point in corners:
         cv2.circle(auxiliar_warped, (int(point[0]), int(point[1])), 2, (0, 255, 0))
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+    ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
+    #print(corners.shape, "first shape")
+    if ret:
+        print("Chessboard corners found.")
 
+        corners2 = corners_sub_pix(gray,corners,criteria)          
+        image = find_external_corners(corners2, image, chessboard_size)
+
+        cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
+        see_window("Detected corners automatically", image)
+    else:
+        print("We are fucked")
     gray = cv2.cvtColor(auxiliar_warped, cv2.COLOR_BGR2GRAY)
-    dots = cv2.goodFeaturesToTrack(gray,50,0.0001,5)
+    gray2 = cv2.equalizeHist(gray)
+
+    dots = cv2.goodFeaturesToTrack(gray2,100,0.0001,5)
     dots = np.int0(dots)
     print(dots.shape)
     for point in dots:
         cv2.circle(auxiliar_warped, (int(point[0][0]), int(point[0][1])), 3, (255, 255, 0))
+    see_window("Auxiliar, ", gray2)
+
     see_window("Auxiliar, ", auxiliar_warped)
     cv2.waitKey(0)
     """corners_original_image = cv2.perspectiveTransform(corners, np.linalg.inv(matrix))
 
 
     corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)"""
-    return corners
+    return original_corners
 
     
