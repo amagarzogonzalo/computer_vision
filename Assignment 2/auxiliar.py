@@ -126,7 +126,7 @@ def averaging_background_model(video_path):
 
     # Release the video capture object
     cap.release()
-    print(f'avg frame: {avg_frame}')
+    #print(f'avg frame: {avg_frame}')
     return avg_frame
 
 
@@ -138,7 +138,7 @@ def subtract_background(frame, background_model):
     hsv_background = cv2.cvtColor(background_model, cv2.COLOR_BGR2HSV)
     # Calculate the absolute difference
     diff = cv2.absdiff(hsv_frame, hsv_background)
-    print(f'diff: {diff}')
+    #print(f'diff: {diff}')
 
     # Thresholds
     hue_thresh = 100
@@ -152,7 +152,7 @@ def subtract_background(frame, background_model):
 
     # Combine the thresholds to determine foreground (use bitwise operations)
     combined_mask = cv2.bitwise_or(hue_thresh, cv2.bitwise_or(sat_thresh, val_thresh))
-    cv2.imshow("combined_mask",combined_mask)
+    #cv2.imshow("combined_mask",combined_mask)
 
     # Post-processing
     kernel = np.ones((5, 5), np.uint8)
@@ -168,9 +168,11 @@ def subtract_background(frame, background_model):
         #cv2.imshow("Foreground Mask", foreground_mask)
     else:
         foreground_mask = np.zeros_like(frame)
+    
+    """cv2.imshow("combined_mask",foreground_mask)
 
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.waitKey(0)"""
+    #cv2.destroyAllWindows()
 
     return foreground_mask
 

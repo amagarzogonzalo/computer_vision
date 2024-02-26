@@ -29,7 +29,8 @@ def set_voxel_positions(width, height, depth):
     :return 
     """
     camera_folders = ["cam1", "cam2", "cam3", "cam4"]
-    mtxs, dists, rvecss, tvecss = [], [],[], [],[]
+    mtxs, dists, rvecss, tvecss, substracted, video = [], [],[], [],[],[]
+
 
     for folder in camera_folders:
         video_path = os.path.join('data',folder,'video.avi')
@@ -43,27 +44,31 @@ def set_voxel_positions(width, height, depth):
         frames = extract_frames(video_path)
         frame = frames[0]
         processed_frame = subtract_background(frame, averaging_background_model(background_path))
-        """cv2.imshow('Foreground', processed_frame)
-        if cv2.waitKey(0):
-            break
-        cv2.destroyAllWindows()"""
+        substracted.append(processed_frame)
+        video.append(frame)
  
     data, colors = [], []
     #Look up table
     for x in range(width):
         for y in range(height):
             for z in range(depth):
+                #TODO
+                voxel = True
+                color = []
                 i = 0
                 for folder in camera_folders:
+                    #print("calculating voxels")
                     voxels = ((x - width / 2) * 40, (y - height / 2) * 40, -z * 40)
-                    points,_ = cv2.projectpoints(voxels, rvecss[i], tvecss[i], mtxs[i], dists[i])
-
-
-
-                    if True:
-                        data.append([x*block_size - width/2, y*block_size, z*block_size - depth/2])
-                        colors.append([x / width, z / depth, y / height])
+                    points,_ = cv2.projectPoints(voxels, rvecss[i], tvecss[i], mtxs[i], dists[i])
+                    #print("first points ", points, "-", points.shape)
+                    points = np.reshape(points[::-1], (2, -1)) 
+                    subs = substracted[i]
+                    heightMask, widthMask, _ = subs.shape
+                
+                   
                     i+= 1
+
+    print("returnigngg")
     return data, colors
 
 
