@@ -43,7 +43,7 @@ def set_voxel_positions(width, height, depth):
         
         frames = extract_frames(video_path)
         frame = frames[0]
-        processed_frame = subtract_background(frame, averaging_background_model(background_path))
+        processed_frame,_ ,_= subtract_background(frame, averaging_background_model(background_path))
         substracted.append(processed_frame)
         video.append(frame)
  
@@ -100,6 +100,7 @@ def get_cam_positions():
         print(video_path)
         mtx, dist, rvecs, tvecs = get_intrinsics(camera_path)
         print(rvecs, "--", tvecs)
+        tvecs /=50
         rotation_matrix = cv2.Rodrigues(rvecs)[0]
         position_vector = -np.matrix(rotation_matrix).T * np.matrix(tvecs)
         cam_positions.append([position_vector[0][0], -position_vector[2][0], position_vector[1][0]])

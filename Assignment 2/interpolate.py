@@ -137,7 +137,7 @@ def interpolate(image, corners, chessboard_size):
     image_after_painting =draw_corners_after_transforming(image, corners_original_image)
 
 
-    """
+    
     square_size = 22
     objpoints = []
     imgpoints = []
@@ -150,5 +150,5 @@ def interpolate(image, corners, chessboard_size):
     see_window("SUPER AUX", image)
     print("Total error auxiliar:::")
     total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
-    #see_window("WORKS?", image_after_painting)"""
+    #see_window("WORKS?", image_after_painting)
     return corners_original_image, image_after_painting

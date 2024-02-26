@@ -3,6 +3,7 @@ import numpy as np
 from interpolate import interpolate, getEquidistantPoints
 from auxiliar import see_window, click_event
 from scipy.spatial.distance import cdist
+import math
 from scipy.spatial import distance
 
 
@@ -19,15 +20,6 @@ def detect_corners_for_extrinsic(gray, img, chessboard_size, number_corners=48, 
     corners = np.int0(corners)
     #see_window("Aux", img)
     return corners
-
-def draw_corners(image, corners):
-    corners = corners.reshape((-1, 2))
-    #print(corners)
-
-    for point in corners:
-        cv2.circle(image, (int(point[0]), int(point[1])), 1, (255, 0, 0))   
-    draw_new_corners(image, image, corners)
-    return image 
 
 def corners_sub_pix(image, corners, criteria):
     try:
@@ -67,12 +59,6 @@ def find_external_corners(corners, image, chessboard_size):
     Outsider_corners.bottom_left = (bottom_left[0] - (+bottom_left_right[0] - bottom_left[0]) - (+bottom_left_above[0] - bottom_left[0]), bottom_left[1] + (-bottom_left_above[1] + bottom_left[1]) + (-bottom_left_right[1] + bottom_left[1]))
     Outsider_corners.bottom_right = (bottom_right[0] + (-bottom_right_left[0] + bottom_right[0]) + (-bottom_right_above[0] + bottom_right[0]), bottom_right[1] + (-bottom_right_above[1] + bottom_right[1])+ (-bottom_right_left[1] + bottom_right[1]))
 
-    """Outsider_corners.distance_threshold = 1.5*(top_left[1]-top_left_bellow[1])
-    Outsider_corners.top_left = ((top_left[0]-(top_left_right[0]-top_left[0])),   (top_left[1]-(top_left_bellow[1]-top_left[1])))
-    Outsider_corners.top_right = ((top_right[0]+(-top_right_left[0]+top_right[0])),   (top_right[1]-(top_right_bellow[1]-top_right[1])))
-    Outsider_corners.bottom_left = ((bottom_left[0]-(bottom_left_right[0]-bottom_left[0])),   (bottom_left[1]+(-bottom_left_above[1]+bottom_left[1])))
-    Outsider_corners.bottom_right = ((bottom_right[0]+(-bottom_right_left[0]+bottom_right[0])+(-bottom_right_above[0]+bottom_right[0]),   (bottom_right[1]+(-bottom_right_above[1]+bottom_right[1])))
-    """
     #print("BR: ", bottom_right_above, bottom_right_left, bottom_right, "res: ", Outsider_corners.bottom_right)
     #TODO comment
     cv2.circle(image, (int(Outsider_corners.top_left[0]), int(Outsider_corners.top_left[1])), 1, (0, 255, 255), thickness=2)
@@ -161,80 +147,101 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, int
             see_window("Corners Detected Automatically", image)
             return corners2, image
 
-#----------------
-        
-def check_for_bigger_line(lines):
-    bigger_lines = [] 
-    for i in range(len(lines)):
-        for j in range(i + 1, len(lines)):
-            line1 = lines[i]
-            line2 = lines[j]
-            # Check if the lines are collinear
-            #if np.cross(np.array(line1[1]) - np.array(line1[0]), np.array(line2[1]) - np.array(line1[0])) == 0:
-            if (collinear(line1[0][0], line1[0][1], line1[1][0], line1[1][1], line2[1][0], line2[1][1]) or collinear(line1[0][0], line1[0][1], line1[1][0], line1[1][1], line2[0][0], line2[0][1])) and line1[0][0] != line2[0][0] and line1[0][0] != line2[1][0] and line1[1][0] != line2[1][0] and line1[1][0] != line2[0][0]:
-                # Lines are collinear, can potentially form a bigger line
-                #approximate
-                print(line1[0], ".", line1[1], "||", line2[0], ".", line2[1])
-                small_point = min(line1[0], line1[1], line2[0], line2[1])
-                big_point = max(line1[0], line1[1], line2[0], line2[1])
-                # Create the bigger line using the smallest and largest points
-                bigger_line = (small_point, big_point)                
-                print("Lines", i, "and", j, "are collinear and can potentially form a bigger line.")
-                bigger_lines.append(bigger_line)
-                #return bigger_lines
-    return bigger_lines
+
+def method_detect_corners_automatically(image, processed_frame, chessboard_size, contour_points, max_contour, criteria):
+    
+    epsilon = 0.04 * cv2.arcLength(max_contour, True)
+    approx = cv2.approxPolyDP(max_contour, epsilon, True)
+
+    cv2.drawContours(processed_frame, [approx], -1, (0, 255, 0), 2)
+
+    corners = approx.reshape(-1, 2)
+
+    ordered_corners = order_corners_aux(corners)
+    final_corners = obtain_inner_corners(ordered_corners, image)
+    corners, image = interpolate(image, final_corners, chessboard_size)
+    if corners is None or image is None:
+        return None, None
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    corners2 = corners_sub_pix(image,corners,criteria) 
+    print("Corners found after intrapolation and manually selected corners.")           
+    #see_window("Result with Interpolation", image)
+    return corners2, image
 
 
-def collinear(x1, y1, x2, y2, x3, y3):
+def order_corners_aux(corners):
+    """
+    Order corners to match the interpolation.
+    :param corners: Unordered corners
+    return: Ordered corners
+    """
+    corners = np.array(corners)
 
-    """ Calculation the area of  
-        triangle. We have skipped 
-        multiplication with 0.5 to
-        avoid floating point computations """
-    a = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)
-    if a == 0:
-        return True
-    else:
-        return False
+    # Calculate the centroid of the corners
+    centroid = np.mean(corners, axis=0)
 
-def draw_new_corners(image, gray, corners):
-    corners = np.array(corners, dtype='int32')
-    lines = []
-    for i in range(len(corners)):
-        x1, y1 = corners[i].ravel()
+    # Calculate the angle of rotation
+    angle = np.arctan2(corners[:,1] - centroid[1], corners[:,0] - centroid[0])
+    angle = np.degrees(angle)
 
-        # Calculate distances to all other corners in 2D space
-        distances = np.linalg.norm(corners - corners[i], axis=1)
+    # Sort corners based on the angle
+    sorted_indexes = np.argsort(angle)
 
-        # Exclude the current corner's distance (distance to itself)
-        distances[i] = 0
+    # Rearrange the corners based on the sorted indexes
+    ordered_corners = corners[sorted_indexes]
 
-        # Find the indices of the two nearest corners
-        nearest_indices = np.argsort(distances)[1:2]
+    # Reorder the corners to match the requested order (top-left, top-right, bottom-right, bottom-left)
+    if ordered_corners[1][1] > ordered_corners[2][1]:
+        ordered_corners[1], ordered_corners[2] = ordered_corners[2], ordered_corners[1]
+    
+    shrink_factor = 3
+    top_left = ordered_corners[0] + shrink_factor
+    top_right = ordered_corners[1] - [shrink_factor, 0]
+    bottom_right = ordered_corners[2] - shrink_factor
+    bottom_left = ordered_corners[3] + [shrink_factor, 0]
 
-        # Draw lines to the two nearest corners
-        for j in nearest_indices:
-            x2, y2 = corners[j].ravel()
-            lines.append(((x1, y1), (x2, y2)))
+    # Adjust the ordered corners with the new values
+    ordered_corners[0] = top_left
+    ordered_corners[1] = top_right
+    ordered_corners[2] = bottom_right
+    ordered_corners[3] = bottom_left
+    
 
-            cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
-            #cv2.line(gray, (x1, y1), (x2, y2), 255, 1)
+    return ordered_corners
+
+def obtain_inner_corners(corners, image):
+
+    """
+    Obtain inner corners for the interpolation.
+    :param corners: Ordered corners.
+    :param image: Image for shape.
+    return: Ordered corners
+    """
+
+    height, width, _ = image.shape
 
 
-    bigger_lines = check_for_bigger_line(lines)
-    print(len(bigger_lines))
-    if len(bigger_lines)>0:
-        print(bigger_lines)
-        for bigger_line in bigger_lines:
-            cv2.line(image, bigger_line[0], bigger_line[1], (255, 0, 255), 2)
-    return image, gray 
+    dst_points = np.array([[0, height - 1], [width - 1, height - 1], [width - 1, 0],[0,0]], dtype="float32")
 
-def extract_corners (corners, image, chessboard_size, gray, number_corners):
-    print("extract corners")
-    corners = corners.reshape(number_corners, 2)
-    #print(corners.shape, corners) 
-    threshold = 15
-    # idea-> find top corners and use it for interpolation, find topleft topright bottomleft bottomright
+    matrix = cv2.getPerspectiveTransform(np.array(corners, dtype="float32"), dst_points)
 
-    #interpolate(image,top_four_corners, chessboard_size)
-    draw_corners(image, gray, corners)
+    auxiliar_warped = cv2.warpPerspective(image, matrix, (width, height))
+    for point in corners:
+        cv2.circle(auxiliar_warped, (int(point[0]), int(point[1])), 2, (0, 255, 0))
+
+
+    gray = cv2.cvtColor(auxiliar_warped, cv2.COLOR_BGR2GRAY)
+    dots = cv2.goodFeaturesToTrack(gray,50,0.0001,5)
+    dots = np.int0(dots)
+    print(dots.shape)
+    for point in dots:
+        cv2.circle(auxiliar_warped, (int(point[0][0]), int(point[0][1])), 3, (255, 255, 0))
+    see_window("Auxiliar, ", auxiliar_warped)
+    cv2.waitKey(0)
+    """corners_original_image = cv2.perspectiveTransform(corners, np.linalg.inv(matrix))
+
+
+    corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)"""
+    return corners
+
+    

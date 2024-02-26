@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from interpolate import interpolate
 from calibration import calibrate_camera, undistort, compute_error
-from detect_corners import find_and_draw_chessboard_corners, detect_corners_automatically, draw_corners, detect_corners_for_extrinsic
+from detect_corners import find_and_draw_chessboard_corners, detect_corners_automatically, detect_corners_for_extrinsic, method_detect_corners_automatically
 from auxiliar import see_window, extract_frames, preprocess_image, mog2_method, subtract_background, averaging_background_model, save_intrinsics, get_intrinsics
 import os
 from os import listdir
@@ -80,11 +80,17 @@ def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic
         cont_aux = 0
         print("Checking folder: ", folder)
         intrinsics_video_path = os.path.join('data', folder, 'checkerboard.avi')
+        background_path = os.path.join('data',folder,'background.avi')
+
         frames = extract_frames(intrinsics_video_path, interval)
         gray, image = preprocess_image(frames[0],True, [(3,3),0.5], (375,375))
         #corners = detect_corners_for_extrinsic(gray,image,chessboard_size)
         #image = draw_corners(image, corners)
-        corners2, image = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, interval, do_manual=True, skip_manual=False)
+        processed_frame, contour_points, max_contour = subtract_background(image, averaging_background_model(background_path))
+        
+
+        corners2, image = method_detect_corners_automatically(image, processed_frame, chessboard_size, contour_points, max_contour, criteria)
+        #corners2, image = find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, interval, do_manual=True, skip_manual=False)
         if corners2 is None or image is None:
             print("Not corners found for this image.")
         else:
@@ -123,13 +129,12 @@ def subtraction():
             #processed_frame = mog2_method(background_path, video_path)
 
             #avergage fram method
-            processed_frame = subtract_background(frame, averaging_background_model(background_path))
+            processed_frame,_,_ = subtract_background(frame, averaging_background_model(background_path))
             cv2.imshow('Foreground', processed_frame)
             if cv2.waitKey(0):
                 break
         cv2.destroyAllWindows()
 
-#subtraction()
 #total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
 
 camera_extrinsic(mtx=None,dist=None, rvec=None, tvec=None)

@@ -173,8 +173,12 @@ def subtract_background(frame, background_model):
 
     cv2.waitKey(0)"""
     #cv2.destroyAllWindows()
+    # Iterate over the points in the contour
+    contour_points = []
+    for point in max_contour:
+        contour_points.append(point)
 
-    return foreground_mask
+    return foreground_mask, contour_points, max_contour
 
 def mog2_method(background_path='background.avi', foreground_path = 'video.avi',history=100, varThreshold=16, detectShadows=True):
 
