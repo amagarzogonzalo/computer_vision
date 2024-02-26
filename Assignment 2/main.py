@@ -59,7 +59,7 @@ def camera_intrinsic():
         return total_error, mtx,dist, rvecs,tvecs
 
 
-def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic_data= False):
+def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic_data= True):
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam1","cam1","cam1","cam1", "cam1"]

@@ -64,56 +64,104 @@ def set_voxel_positions(width, height, depth):
                     points = np.reshape(points[::-1], (2, -1)) 
                     subs = substracted[i]
                     heightMask, widthMask, _ = subs.shape
-                
+
+
+                    # Avoid pixels outside the boundaries of the 2D images
+                    if 0 <= points[0] < heightMask and 0 <= points[1] < widthMask:
+                        val = subs[int(points[0]), int(points[1])]
+                        color.append(video[i][int(points[0])][int(points[1])])
+
+                        # If the value is zero in any of the cameras it is not considered
+                        # as activated in the 3D space.
+                        if val == 0:
+                            voxel = False
+
+                    if voxel:
+
+                        # Summed 40 to compensate the 40 factor multiplication before and maintain the subject on its
+                        # initial position
+                        data.append(
+                            [(x * block_size/2 - width)+40, (z * block_size)/2,
+                            (y * block_size/2 - depth)+40])
                    
                     i+= 1
 
-    print("returnigngg")
     return data, colors
+
 
 
 def get_cam_positions():
     # Generates dummy camera locations at the 4 corners of the room
-    # TODO: You need to input the estimated locations of the 4 cameras in the world coordinates.
-    return [[-64 * block_size, 64 * block_size, 63 * block_size],
-            [63 * block_size, 64 * block_size, 63 * block_size],
-            [63 * block_size, 64 * block_size, -64 * block_size],
-            [-64 * block_size, 64 * block_size, -64 * block_size]], \
-        [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0], [1.0, 1.0, 0]]
+    camera_folders = ["cam1", "cam2", "cam3", "cam4"]
+
+    cam_positions = []
+    for camera_path in camera_folders:
+        video_path = os.path.join(camera_path, 'video.avi')
+        print(video_path)
+        mtx, dist, rvecs, tvecs = get_intrinsics(camera_path)
+        print(rvecs, "--", tvecs)
+        rotation_matrix = cv2.Rodrigues(rvecs)[0]
+        position_vector = -np.matrix(rotation_matrix).T * np.matrix(tvecs)
+        cam_positions.append([position_vector[0][0], -position_vector[2][0], position_vector[1][0]])
+    print(cam_positions)
+    return cam_positions, [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0], [1.0, 1.0, 0]]
 
 
 def get_cam_rotation_matrices():
-    # Generates dummy camera rotation matrices, looking down 45 degrees towards the center of the room
-    # TODO: You need to input the estimated camera rotation matrices (4x4) of the 4 cameras in the world coordinates.
     cam_angles = [[0, 45, -45], [0, 135, -45], [0, 225, -45], [0, 315, -45]]
-    cam_rotations = [glm.mat4(1), glm.mat4(1), glm.mat4(1), glm.mat4(1)]
-    for c in range(len(cam_rotations)):
-        cam_rotations[c] = glm.rotate(cam_rotations[c], cam_angles[c][0] * np.pi / 180, [1, 0, 0])
-        cam_rotations[c] = glm.rotate(cam_rotations[c], cam_angles[c][1] * np.pi / 180, [0, 1, 0])
-        cam_rotations[c] = glm.rotate(cam_rotations[c], cam_angles[c][2] * np.pi / 180, [0, 0, 1])
+    cam_rotations = []
+    camera_folders = ["cam1", "cam2", "cam3", "cam4"]
+
+    for folder in camera_folders:
+        video_path = os.path.join('data', folder, 'video.avi')
+        mtx, dist, rvecs, tvecs = get_intrinsics(folder)
+
+        rotation_matrix = cv2.Rodrigues(rvecs)[0]
+
+        # Form a 4x4 transformation matrix including rotation and translation for OpenGL
+        transformation_matrix = glm.mat4(rotation_matrix[0][0], rotation_matrix[0][1], rotation_matrix[0][2], tvecs[0][0],
+                                         rotation_matrix[1][0], rotation_matrix[1][1], rotation_matrix[1][2], tvecs[1][0],
+                                         rotation_matrix[2][0], rotation_matrix[2][1], rotation_matrix[2][2], tvecs[2][0],
+                                         0, 0, 0, 1)
+        # Apply GLM rotations to align with OpenGL's coordinate system
+        adjusted_matrix = glm.rotate(transformation_matrix, glm.radians(-90), (0, 1, 0))
+        adjusted_matrix = glm.rotate(adjusted_matrix, glm.radians(180), (1, 0, 0))
+
+        cam_rotations.append(adjusted_matrix)
+
     return cam_rotations
+
+
 
 """
 def get_cam_positions():
     # Generates dummy camera locations at the 4 corners of the room
-    # TODO: You need to input the estimated locations of the 4 cameras in the world coordinates.
     camera_folders = ["cam1", "cam2", "cam3", "cam4"]
 
     positions = np.zeros((4, 3))
-
+    i = 0
     for folder in camera_folders:
         video_path = os.path.join('data', folder, 'video.avi')
         mtx, dist, rvecs, tvecs = get_intrinsics(folder)
 
         # Convert rotation vector to matrix
         rotation_matrix, _ = cv2.Rodrigues(rvecs)
+        # The camera positions are calculated from the extrinsic parameters.
+        positions[i] = (-np.dot(np.transpose(rotation_matrix), tvecs.reshape(-1) / 115))
+        i+=1
 
-        # Compute camera position, considering the conversion for OpenGL compatibility
-        position = -np.matmul(rotation_matrix.T, tvecs)
-        positions[folder - 1] = position.flatten()[:3]
+    final_positions = [[positions[0][0], -positions[0][2], positions[0][1]],
+                    [positions[1][0], -positions[1][2], positions[1][1]],
+                    [positions[2][0], -positions[2][2], positions[2][1]],
+                    [positions[3][0], -positions[3][2], positions[3][1]]]
+    #TODO modify Colors
+    colors = [[1.0, 0, 0],
+            [0, 0, 1.0], 
+            [0, 1.0, 0], 
+            [1.0, 1.0, 0]]
+        
 
-    return positions
-
+    return final_positions, colors
 
 def get_cam_rotation_matrices():
     # Generates dummy camera rotation matrices, looking down 45 degrees towards the center of the room
@@ -129,9 +177,9 @@ def get_cam_rotation_matrices():
         rotation_matrix, _ = cv2.Rodrigues(rvecs)
 
         # Form a 4x4 transformation matrix including rotation and translation for OpenGL
-        transformation_matrix = glm.mat4(rotation_matrix[0][0], rotation_matrix[0][1], rotation_matrix[0][2], tvecs[0],
-                                         rotation_matrix[1][0], rotation_matrix[1][1], rotation_matrix[1][2], tvecs[1],
-                                         rotation_matrix[2][0], rotation_matrix[2][1], rotation_matrix[2][2], tvecs[2],
+        transformation_matrix = glm.mat4(rotation_matrix[0][0], rotation_matrix[0][1], rotation_matrix[0][2], tvecs[0][0],
+                                         rotation_matrix[1][0], rotation_matrix[1][1], rotation_matrix[1][2], tvecs[1][0],
+                                         rotation_matrix[2][0], rotation_matrix[2][1], rotation_matrix[2][2], tvecs[2][0],
                                          0, 0, 0, 1)
         # Apply GLM rotations to align with OpenGL's coordinate system
         adjusted_matrix = glm.rotate(transformation_matrix, glm.radians(-90), (0, 1, 0))
@@ -139,7 +187,6 @@ def get_cam_rotation_matrices():
 
         cam_rotations.append(adjusted_matrix)
 
-    #return cam_rotationsate(cam_rotations[c], cam_angles[c][2] * np.pi / 180, [0, 0, 1])
     return cam_rotations
 
 """
