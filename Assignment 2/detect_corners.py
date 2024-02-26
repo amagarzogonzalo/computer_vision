@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from interpolate import interpolate, getEquidistantPoints
-from auxiliar import see_window, click_event
+from auxiliar import see_window, click_event, preprocess_image
 from scipy.spatial.distance import cdist
 import math
 from scipy.spatial import distance
@@ -226,38 +226,51 @@ def obtain_inner_corners(corners, image, chessboard_size, criteria):
     matrix = cv2.getPerspectiveTransform(np.array(corners, dtype="float32"), dst_points)
 
     auxiliar_warped = cv2.warpPerspective(image, matrix, (width, height))
-    for point in corners:
-        cv2.circle(auxiliar_warped, (int(point[0]), int(point[1])), 2, (0, 255, 0))
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
-    #print(corners.shape, "first shape")
-    if ret:
-        print("Chessboard corners found.")
-
-        corners2 = corners_sub_pix(gray,corners,criteria)          
-        image = find_external_corners(corners2, image, chessboard_size)
-
-        cv2.drawChessboardCorners(image, chessboard_size, corners2, ret)
-        see_window("Detected corners automatically", image)
-    else:
-        print("We are fucked")
+    
     gray = cv2.cvtColor(auxiliar_warped, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.equalizeHist(gray)
+    threshold = 229
+    top_left, top_right, bottom_right, bottom_left =aux_points(gray,threshold)
 
-    dots = cv2.goodFeaturesToTrack(gray2,100,0.0001,5)
+    cv2.circle(gray, top_left, 1, (0, 0, 255), -1)
+    cv2.circle(gray, top_right, 5, (0, 0, 255), -1)
+    cv2.circle(gray, bottom_right, 1, (244, 0, 255), -1)
+    cv2.circle(gray, bottom_left, 5, (244, 0, 255), -1)
+    
+    #gray2 = preprocess_image(auxiliar_warped,True)
+
+    dots = cv2.goodFeaturesToTrack(gray,200,0.005,50)
     dots = np.int0(dots)
     print(dots.shape)
-    for point in dots:
-        cv2.circle(auxiliar_warped, (int(point[0][0]), int(point[0][1])), 3, (255, 255, 0))
-    see_window("Auxiliar, ", gray2)
 
-    see_window("Auxiliar, ", auxiliar_warped)
+
+    see_window("Auxiliar, ", gray)
+
     cv2.waitKey(0)
     """corners_original_image = cv2.perspectiveTransform(corners, np.linalg.inv(matrix))
-
-
-    corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)"""
+ corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)"""
     return original_corners
 
+def aux_points(gray, threshold):
+    height, width = gray.shape
+    top_left = None
+    top_right = None
+    bottom_right = None
+    bottom_left = None
     
+    for x in range(height):
+        for y in range(width):
+            if gray[x, y] > threshold:
+                if top_left is None or (x < top_left[0] and y < top_left[1]):
+                    top_left = (x, y)
+                    print("new topleft")
+                if top_right is None or (y < top_right[1] and x > top_right[0]):
+                    top_right = (x, y)
+                    print("new toprigth")
+                if bottom_right is None or (x > bottom_right[0] and y > bottom_right[1]):
+                    bottom_right = (x, y)
+                    print("new bottomright")
+                if bottom_left is None or (y > bottom_left[1] and x < bottom_left[0]):
+                    bottom_left = (x, y)
+                    print("newbottlef")
+    
+    return top_left, top_right, bottom_right, bottom_left

@@ -83,7 +83,7 @@ def get_intrinsics(folder):
 
     return mtx, dist, rvecs, tvecs
 
-def preprocess_image(image_aux, optimize_image, kernel_params, canny_thresholds):
+def preprocess_image(image_aux, optimize_image, kernel_params=[(3,3),0.5], canny_thresholds=(375, 375)):
     """
     Preprocess the input image based on the specified parameters.
 
