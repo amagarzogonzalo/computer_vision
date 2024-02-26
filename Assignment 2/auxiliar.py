@@ -152,7 +152,7 @@ def subtract_background(frame, background_model):
 
     # Combine the thresholds to determine foreground (use bitwise operations)
     combined_mask = cv2.bitwise_or(hue_thresh, cv2.bitwise_or(sat_thresh, val_thresh))
-    cv2.imshow("combined_mask",combined_mask)
+    #cv2.imshow("combined_mask",combined_mask)
 
     # Post-processing
     kernel = np.ones((5, 5), np.uint8)
