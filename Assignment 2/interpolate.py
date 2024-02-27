@@ -123,7 +123,7 @@ def interpolate(image, corners, chessboard_size):
             corners_np[i * rows + j, 0, 0] = point[0]
             corners_np[i * rows + j, 0, 1] = point[1]
             #TODO delete this
-            cv2.circle(axuiliar_warped, (int(point[0]), int(point[1])), 2, (0, 255, 0))
+            #cv2.circle(axuiliar_warped, (int(point[0]), int(point[1])), 2, (0, 255, 0))
 
 
     #see_window('Warped image', axuiliar_warped)
@@ -137,8 +137,8 @@ def interpolate(image, corners, chessboard_size):
     image_after_painting =draw_corners_after_transforming(image, corners_original_image)
 
 
-    
-    square_size = 22
+    # Testing for interpolation
+    """square_size = 22
     objpoints = []
     imgpoints = []
     objp = np.zeros((rows*cols,3), np.float32)
@@ -149,6 +149,6 @@ def interpolate(image, corners, chessboard_size):
     ret, mtx, dist, rvecs, tvecs = calibrate_camera(objpoints, imgpoints, image)
     see_window("SUPER AUX", image)
     print("Total error auxiliar:::")
-    total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)
+    total_error = compute_error(objpoints, imgpoints, rvecs, tvecs, mtx, dist)"""
     #see_window("WORKS?", image_after_painting)
     return corners_original_image, image_after_painting

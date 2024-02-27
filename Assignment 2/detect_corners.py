@@ -149,7 +149,16 @@ def find_and_draw_chessboard_corners(gray, image, chessboard_size, criteria, int
 
 
 def method_detect_corners_automatically(image, processed_frame, chessboard_size, contour_points, max_contour, criteria):
-    
+    """
+    Detect corners automatically.
+    :param image: Input image.
+    :param processed_frame: Processed frame.
+    :param chessboard_size: Size of the chessboard.
+    :param contour_points: Contour points.
+    :param max_contour: Maximum contour.
+    :param criteria: Criteria.
+    :return: Detected corners and image.
+    """
     epsilon = 0.04 * cv2.arcLength(max_contour, True)
     approx = cv2.approxPolyDP(max_contour, epsilon, True)
 
@@ -164,7 +173,7 @@ def method_detect_corners_automatically(image, processed_frame, chessboard_size,
         return None, None
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     corners2 = corners_sub_pix(image,corners,criteria) 
-    print("Corners found after intrapolation and manually selected corners.")           
+    print("Corners found after intrapolation and automatically selected corners.")           
     #see_window("Result with Interpolation", image)
     return corners2, image
 
@@ -248,13 +257,18 @@ def obtain_inner_corners(corners, image, chessboard_size, criteria):
 
     corners_original_image = cv2.perspectiveTransform(corners_np, np.linalg.inv(matrix))
     corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)
-    print(corners_original_image)
+    """print(corners_original_image)
     print("_- orig")
-    print(original_corners)
+    print(original_corners)"""
     return corners_original_image
 
 def aux_points(img, threshold):
-
+    """
+    Find auxiliary points.
+    :param img: Input image.
+    :param threshold: Threshold value.
+    :return: List of auxiliary points.
+    """
     img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     blur = cv2.GaussianBlur(img2,(25,25),0) 
@@ -264,8 +278,6 @@ def aux_points(img, threshold):
     contours = filter_contours(contours)
     for contour in contours:
         cv2.drawContours(img, [contour], -1, (255, 0, 0), 3)
-    #see_window("·R", img)
-
     top_left = (float('inf'), float('inf'))
     top_right = (float('-inf'), float('inf'))
     bottom_right = (float('-inf'), float('-inf'))
@@ -283,14 +295,15 @@ def aux_points(img, threshold):
             if x - y < bottom_left[0] - bottom_left[1]:
                 bottom_left = (x, y)
 
-    cv2.circle(img, top_left, 10, (0, 255, 0), -1)
+    """cv2.circle(img, top_left, 10, (0, 255, 0), -1)
     cv2.circle(img, top_right, 10, (0, 255, 0), -1)
     cv2.circle(img, bottom_right, 10, (0, 255, 0), -1)
     cv2.circle(img, bottom_left, 10, (0, 255, 0), -1)
     
-    # Display the image
-    #see_window("Contours with Extreme Points", img)
+    see_window("Contours with Extreme Points", img)"""
+
     corners = []
+
     # the order of the corners must be modified after the warped image to match the interpolation
     corners.append(bottom_left)
     corners.append(bottom_right)
@@ -299,6 +312,13 @@ def aux_points(img, threshold):
     return corners
 
 def filter_contours(contours, min_area= 500, max_area=10000):
+    """
+    Filter contours based on area.
+    :param contours: Input contours.
+    :param min_area: Minimum area.
+    :param max_area: Maximum area.
+    :return: Filtered contours.
+    """
     filtered_contours = []
     for contour in contours:
         area = cv2.contourArea(contour)
