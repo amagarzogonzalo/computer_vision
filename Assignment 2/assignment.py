@@ -99,11 +99,11 @@ def get_cam_positions():
         video_path = os.path.join(camera_path, 'video.avi')
         print(video_path)
         mtx, dist, rvecs, tvecs = get_intrinsics(camera_path)
-        print(rvecs, "--", tvecs)
+        #print(rvecs, "--", tvecs)
         tvecs /= 10
         rotation_matrix = cv2.Rodrigues(rvecs)[0]
         position_vector = -np.matrix(rotation_matrix).T * np.matrix(tvecs)
-        cam_positions.append([position_vector[0][0], -position_vector[2][0], position_vector[1][0]])
+        cam_positions.append([position_vector[0][0], -position_vector[2][0], -position_vector[1][0]])
     return cam_positions, [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0], [1.0, 1.0, 0]]
 
 
