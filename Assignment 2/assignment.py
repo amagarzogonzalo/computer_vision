@@ -73,8 +73,7 @@ def set_voxel_positions(width, height, depth):
 
                         # If the value is zero in any of the cameras it is not considered
                         # as activated in the 3D space.
-                        if val == 0:
-                            voxel = False
+                        
 
                     if voxel:
 
