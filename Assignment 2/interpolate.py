@@ -86,9 +86,16 @@ def interpolate(image, corners, chessboard_size):
         return None, None
 
     height, width, _ = image.shape
+    origincorners = corners.squeeze()
     corners = np.array(corners, dtype="float32")
     rows, cols= chessboard_size  # 9,6
-
+    radius = 1
+    #print(corners.shape)
+    for corner in origincorners:
+        cv2.circle(image, (int(corner[0]), int(corner[1])), radius, (0, 255, 255), thickness=2)
+    
+        radius += 1
+    #print(corners)
 
     dst_points = np.array([[0, height - 1], [width - 1, height - 1], [width - 1, 0],[0,0]], dtype="float32")
 

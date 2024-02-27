@@ -22,6 +22,7 @@ def detect_corners_for_extrinsic(gray, img, chessboard_size, number_corners=48, 
     return corners
 
 def corners_sub_pix(image, corners, criteria):
+    return corners
     try:
         corners2 = cv2.cornerSubPix(image, corners, (11,11), (-1,-1), criteria)
         return corners2
@@ -161,12 +162,16 @@ def method_detect_corners_automatically(image, processed_frame, chessboard_size,
     """
     epsilon = 0.04 * cv2.arcLength(max_contour, True)
     approx = cv2.approxPolyDP(max_contour, epsilon, True)
-
+   
     cv2.drawContours(processed_frame, [approx], -1, (0, 255, 0), 2)
-
+    
+    
+    #see_window("proc", processed_frame)
+    cv2.waitKey(0)
     corners = approx.reshape(-1, 2)
-
+    #print("corners bfore order", corners)
     ordered_corners = order_corners_aux(corners)
+    #print("after order", ordered_corners)
     final_corners = obtain_inner_corners(ordered_corners, image, chessboard_size, criteria)
     corners, image = interpolate(image, final_corners, chessboard_size)
     if corners is None or image is None:
@@ -192,6 +197,12 @@ def order_corners_aux(corners):
     # Calculate the angle of rotation
     angle = np.arctan2(corners[:,1] - centroid[1], corners[:,0] - centroid[0])
     angle = np.degrees(angle)
+    print("angle:", angle)
+
+    # Check if the chessboard is more horizontally oriented
+    horizontal_orientation = False
+    if angle[0] > 150:
+        horizontal_orientation = True
 
     # Sort corners based on the angle
     sorted_indexes = np.argsort(angle)
@@ -202,19 +213,28 @@ def order_corners_aux(corners):
     # Reorder the corners to match the requested order (top-left, top-right, bottom-right, bottom-left)
     if ordered_corners[1][1] > ordered_corners[2][1]:
         ordered_corners[1], ordered_corners[2] = ordered_corners[2], ordered_corners[1]
-    
+
     shrink_factor = 3
-    top_left = ordered_corners[0] + shrink_factor
-    top_right = ordered_corners[1] - [shrink_factor, 0]
-    bottom_right = ordered_corners[2] - shrink_factor
-    bottom_left = ordered_corners[3] + [shrink_factor, 0]
+    if horizontal_orientation:
+        print("horizontaaaaaaaaaaaaaaaaaaaaal!!!")
+        # For horizontal orientation, adjust according to the new order
+        top_left = ordered_corners[1] + [shrink_factor, 0]
+        top_right = ordered_corners[2] - [shrink_factor, 0]
+        bottom_right = ordered_corners[3] - [shrink_factor, 0]
+        bottom_left = ordered_corners[0] + [shrink_factor, 0]
+    else:
+        # For vertical orientation, keep the original adjustment
+        print("verticalll")
+        top_left = ordered_corners[0] + [shrink_factor, 0]
+        top_right = ordered_corners[1] - [shrink_factor, 0]
+        bottom_right = ordered_corners[2] - [shrink_factor, 0]
+        bottom_left = ordered_corners[3] + [shrink_factor, 0]
 
     # Adjust the ordered corners with the new values
     ordered_corners[0] = top_left
     ordered_corners[1] = top_right
     ordered_corners[2] = bottom_right
     ordered_corners[3] = bottom_left
-    
 
     return ordered_corners
 
@@ -272,7 +292,7 @@ def aux_points(img, threshold):
     img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     blur = cv2.GaussianBlur(img2,(25,25),0) 
-    ret, binary = cv2.threshold(blur,123,255,cv2.THRESH_BINARY) 
+    ret, binary = cv2.threshold(blur,135,255,cv2.THRESH_BINARY) 
     binary = cv2.bitwise_not(binary)
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) 
     contours = filter_contours(contours)
@@ -295,12 +315,12 @@ def aux_points(img, threshold):
             if x - y < bottom_left[0] - bottom_left[1]:
                 bottom_left = (x, y)
 
-    """cv2.circle(img, top_left, 10, (0, 255, 0), -1)
+    cv2.circle(img, top_left, 10, (0, 255, 0), -1)
     cv2.circle(img, top_right, 10, (0, 255, 0), -1)
     cv2.circle(img, bottom_right, 10, (0, 255, 0), -1)
     cv2.circle(img, bottom_left, 10, (0, 255, 0), -1)
     
-    see_window("Contours with Extreme Points", img)"""
+    see_window("Contours with Extreme Points", img)
 
     corners = []
 
@@ -311,7 +331,7 @@ def aux_points(img, threshold):
     corners.append(top_left)
     return corners
 
-def filter_contours(contours, min_area= 500, max_area=10000):
+def filter_contours(contours, min_area= 650, max_area=10000):
     """
     Filter contours based on area.
     :param contours: Input contours.

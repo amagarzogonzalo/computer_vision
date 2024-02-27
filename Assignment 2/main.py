@@ -107,7 +107,7 @@ def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic
     
         
             for i in range(3):
-                image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 4)
+               image = cv2.line(image, tuple(corners3[0].ravel()), tuple(axis_points[i].ravel()), ((0,255, 0), (255, 0, 0), (0, 0, 255))[i], 4)
             see_window("Image with axis.", image)
             if save_intrinsic_data:
                 save_intrinsics(mtx,rvecs,tvecs,dist, folder)
@@ -136,7 +136,9 @@ def subtraction():
         cv2.destroyAllWindows()
 
 #total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
+#camera_extrinsic(mtx, dist, rvecs, tvecs)
 
 camera_extrinsic(mtx=None,dist=None, rvec=None, tvec=None)
-#camera_extrinsic(mtx, dist, rvecs, tvecs)
+
+
         
