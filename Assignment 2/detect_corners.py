@@ -197,7 +197,6 @@ def order_corners_aux(corners):
     # Calculate the angle of rotation
     angle = np.arctan2(corners[:,1] - centroid[1], corners[:,0] - centroid[0])
     angle = np.degrees(angle)
-    print("angle:", angle)
 
     # Check if the chessboard is more horizontally oriented
     horizontal_orientation = False
