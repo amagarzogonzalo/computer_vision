@@ -228,49 +228,80 @@ def obtain_inner_corners(corners, image, chessboard_size, criteria):
     auxiliar_warped = cv2.warpPerspective(image, matrix, (width, height))
     
     gray = cv2.cvtColor(auxiliar_warped, cv2.COLOR_BGR2GRAY)
-    threshold = 229
-    top_left, top_right, bottom_right, bottom_left =aux_points(gray,threshold)
+    threshold = 150
 
-    cv2.circle(gray, top_left, 1, (0, 0, 255), -1)
-    cv2.circle(gray, top_right, 5, (0, 0, 255), -1)
-    cv2.circle(gray, bottom_right, 1, (244, 0, 255), -1)
-    cv2.circle(gray, bottom_left, 5, (244, 0, 255), -1)
+    """#cv2.circle(gray, (int(top_left[0]), int(top_left[1])), 5, (0, 255, 255), -1)
+    cv2.circle(gray, (top_right[0], top_right[1]), 5, (0, 255, 255), -1)
+    cv2.circle(gray, bottom_right,5, (244, 0, 255), -1)
+    cv2.circle(gray, bottom_left, 5, (244, 234, 255), -1)"""
     
     #gray2 = preprocess_image(auxiliar_warped,True)
 
-    dots = cv2.goodFeaturesToTrack(gray,200,0.005,50)
-    dots = np.int0(dots)
-    print(dots.shape)
 
+    adjusted_corners =aux_points(auxiliar_warped,threshold)
+    adjusted_corners = np.array(adjusted_corners)
+    corners_np = np.zeros((4, 1, 2), dtype=np.float32)
 
-    see_window("Auxiliar, ", gray)
+    for i, corner in enumerate(adjusted_corners):
+        corners_np[i, 0, 0] = corner[0]  
+        corners_np[i, 0, 1] = corner[1] 
 
-    cv2.waitKey(0)
-    """corners_original_image = cv2.perspectiveTransform(corners, np.linalg.inv(matrix))
- corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)"""
-    return original_corners
+    corners_original_image = cv2.perspectiveTransform(corners_np, np.linalg.inv(matrix))
+    corners_original_image = np.array(corners_original_image, dtype=np.float32).reshape(-1, 1, 2)
+    print(corners_original_image)
+    print("_- orig")
+    print(original_corners)
+    return corners_original_image
 
-def aux_points(gray, threshold):
-    height, width = gray.shape
-    top_left = None
-    top_right = None
-    bottom_right = None
-    bottom_left = None
+def aux_points(img, threshold):
+
+    img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    blur = cv2.GaussianBlur(img2,(25,25),0) 
+    ret, binary = cv2.threshold(blur,123,255,cv2.THRESH_BINARY) 
+    binary = cv2.bitwise_not(binary)
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) 
+    contours = filter_contours(contours)
+    for contour in contours:
+        cv2.drawContours(img, [contour], -1, (255, 0, 0), 3)
+    #see_window("·R", img)
+
+    top_left = (float('inf'), float('inf'))
+    top_right = (float('-inf'), float('inf'))
+    bottom_right = (float('-inf'), float('-inf'))
+    bottom_left = (float('inf'), float('-inf'))
     
-    for x in range(height):
-        for y in range(width):
-            if gray[x, y] > threshold:
-                if top_left is None or (x < top_left[0] and y < top_left[1]):
-                    top_left = (x, y)
-                    print("new topleft")
-                if top_right is None or (y < top_right[1] and x > top_right[0]):
-                    top_right = (x, y)
-                    print("new toprigth")
-                if bottom_right is None or (x > bottom_right[0] and y > bottom_right[1]):
-                    bottom_right = (x, y)
-                    print("new bottomright")
-                if bottom_left is None or (y > bottom_left[1] and x < bottom_left[0]):
-                    bottom_left = (x, y)
-                    print("newbottlef")
+    for contour in contours:
+        for point in contour:
+            x, y = point[0]
+            if x + y < top_left[0] + top_left[1]:
+                top_left = (x, y)
+            if x - y > top_right[0] - top_right[1]:
+                top_right = (x, y)
+            if x + y > bottom_right[0] + bottom_right[1]:
+                bottom_right = (x, y)
+            if x - y < bottom_left[0] - bottom_left[1]:
+                bottom_left = (x, y)
+
+    cv2.circle(img, top_left, 10, (0, 255, 0), -1)
+    cv2.circle(img, top_right, 10, (0, 255, 0), -1)
+    cv2.circle(img, bottom_right, 10, (0, 255, 0), -1)
+    cv2.circle(img, bottom_left, 10, (0, 255, 0), -1)
     
-    return top_left, top_right, bottom_right, bottom_left
+    # Display the image
+    #see_window("Contours with Extreme Points", img)
+    corners = []
+    # the order of the corners must be modified after the warped image to match the interpolation
+    corners.append(bottom_left)
+    corners.append(bottom_right)
+    corners.append(top_right)
+    corners.append(top_left)
+    return corners
+
+def filter_contours(contours, min_area= 500, max_area=10000):
+    filtered_contours = []
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if min_area < area < max_area:
+            filtered_contours.append(contour)
+    return filtered_contours
