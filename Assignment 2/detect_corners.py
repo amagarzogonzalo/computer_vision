@@ -191,10 +191,8 @@ def order_corners_aux(corners):
     """
     corners = np.array(corners)
 
-    # Calculate the centroid of the corners
     centroid = np.mean(corners, axis=0)
 
-    # Calculate the angle of rotation
     angle = np.arctan2(corners[:,1] - centroid[1], corners[:,0] - centroid[0])
     angle = np.degrees(angle)
 
@@ -203,33 +201,24 @@ def order_corners_aux(corners):
     if angle[0] > 150:
         horizontal_orientation = True
 
-    # Sort corners based on the angle
     sorted_indexes = np.argsort(angle)
-
-    # Rearrange the corners based on the sorted indexes
     ordered_corners = corners[sorted_indexes]
 
-    # Reorder the corners to match the requested order (top-left, top-right, bottom-right, bottom-left)
     if ordered_corners[1][1] > ordered_corners[2][1]:
         ordered_corners[1], ordered_corners[2] = ordered_corners[2], ordered_corners[1]
 
     shrink_factor = 3
     if horizontal_orientation:
-        print("horizontaaaaaaaaaaaaaaaaaaaaal!!!")
-        # For horizontal orientation, adjust according to the new order
         top_left = ordered_corners[1] + [shrink_factor, 0]
         top_right = ordered_corners[2] - [shrink_factor, 0]
         bottom_right = ordered_corners[3] - [shrink_factor, 0]
         bottom_left = ordered_corners[0] + [shrink_factor, 0]
     else:
-        # For vertical orientation, keep the original adjustment
-        print("verticalll")
         top_left = ordered_corners[0] + [shrink_factor, 0]
         top_right = ordered_corners[1] - [shrink_factor, 0]
         bottom_right = ordered_corners[2] - [shrink_factor, 0]
         bottom_left = ordered_corners[3] + [shrink_factor, 0]
 
-    # Adjust the ordered corners with the new values
     ordered_corners[0] = top_left
     ordered_corners[1] = top_right
     ordered_corners[2] = bottom_right
