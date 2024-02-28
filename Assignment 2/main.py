@@ -13,6 +13,8 @@ tile_size = 115
 
 
 def camera_intrinsic():
+    # Calculate camera intrinsics and draw axis
+
     frames_per_folder = 30
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 30
@@ -60,6 +62,7 @@ def camera_intrinsic():
 
 
 def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic_data= True):
+    # Calculate camera extrinsics and draw axis
     camera_folders = ["cam1","cam2","cam3","cam4"]
     interval = 10
     #camera_folders = ["cam1","cam1","cam1","cam1", "cam1"]

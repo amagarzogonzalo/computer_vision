@@ -52,36 +52,29 @@ def set_voxel_positions(width, height, depth):
     for x in range(width):
         for y in range(height):
             for z in range(depth):
-                #TODO
-                voxel = True
+                background = False
                 color = []
                 i = 0
                 for folder in camera_folders:
-                    voxels = ((x - width / 2) * 50, (y - height / 2) * 50, -z * 50)
+                    voxels = (x*block_size - width/2, y*block_size, z*block_size - depth/2)
+                    # we obtain the projected point for a voxel
                     points,_ = cv2.projectPoints(voxels, rvecss[i], tvecss[i], mtxs[i], dists[i])
                     points = np.reshape(points[::-1], (2, -1)) 
                     subs = substracted[i]
-                    heightMask, widthMask, _ = subs.shape
-                    #print(heightMask, widthMask)
-                    #print(points)
-                    points[0] = abs(points[0])
-                    points[1] = abs(points[1])
-
-                    if 0 <= points[0] < heightMask and 0 <= points[1] < widthMask:
+                    subs = subs[:, :, 0]
+                    hmask, wmask = subs.shape
+                    if  0 <= points[1] < wmask and 0 <= points[0] < hmask: # we can see the point inside the mask
                         val = subs[int(points[0]), int(points[1])]
-                        color.append(video[i][int(points[0])][int(points[1])])
 
-                        # If the value is zero in any of the cameras it is not considered
-                        # as activated in the 3D space.
-                        if val.any() == 0:
-                            voxel = False
+                        # we check if the value of the point is 0, so is background, 1 otherwise
+                        if val == 0:
+                            background = True
 
-                    if voxel:
+                    if not background:
+                        # then is foreground and we append it to data using a random color
                         data.append(
-                            [(x * block_size/2 - width)+50, (z * block_size)/2,
-                            (y * block_size/2 - depth)+50])
-                        final_color = np.mean(np.array(color), axis=0) / 256
-                        colors.append(final_color)
+                            [x*block_size - width/2, y*block_size, z*block_size - depth/2])
+                        colors.append((255,255,0))
                    
                     i+= 1
 
@@ -106,7 +99,8 @@ def get_cam_positions():
 
 
 def get_cam_rotation_matrices():
-    cam_angles = [[0, 45, -45], [0, 135, -45], [0, 225, -45], [0, 315, -45]]
+    # Generates dummy camera rotation matrices, looking down 45 degrees towards the center of the room
+
     camera_rotations = []
     camera_folders = ["cam1", "cam2", "cam3", "cam4"]
 
