@@ -106,106 +106,116 @@ def preprocess_image(image_aux, optimize_image, kernel_params=[(3,3),0.5], canny
         return img, image_aux
 
 def averaging_background_model(video_path):
+    """
+    Computes the average background model from a given video.
 
+    :param video_path: Path to the video file.
+    :return: The average frame computed from all frames in the video.
+    """
+    # Initialize video capture
     cap = cv2.VideoCapture(video_path)
     frames = []
     ret = True
 
-    # Read frames from the video
+    # Read frames from the video until no more frames are returned
     while ret:
         ret, frame = cap.read()
         if ret:
-            frames.append(frame)
-    # Compute the average of frames if the list is not empty
+            frames.append(frame)  # Append each valid frame to the list
+
+    # Compute the average of all frames if the list is not empty
     if frames:
         avg_frame = np.mean(np.array(frames, dtype=np.float32), axis=0).astype(dtype=np.uint8)
-
-        #cv2.imwrite('background_model.jpg', avg_frame)
     else:
         print("No frames to process.")
 
-    # Release the video capture object
-    cap.release()
-    #print(f'avg frame: {avg_frame}')
-    return avg_frame
+    cap.release()  # Release the video capture object
+    return avg_frame if frames else None
 
 
 def subtract_background(frame, background_model):
+    """
+    Subtracts the background model from a given frame and identifies the foreground.
 
-    # Convert frame to HSV
+    :param frame: The current frame from the video.
+    :param background_model: The computed background model.
+    :return: A mask representing the foreground, contour points, and the largest contour.
+    """
+    # Convert both frame and background model to HSV color space
     hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Convert background
     hsv_background = cv2.cvtColor(background_model, cv2.COLOR_BGR2HSV)
-    # Calculate the absolute difference
+
+    # Calculate the absolute difference between the frame and the background model
     diff = cv2.absdiff(hsv_frame, hsv_background)
-    #print(f'diff: {diff}')
 
-    # Thresholds
-    hue_thresh = 100
-    sat_thresh = 30
-    val_thresh = 25
+    # Threshold the difference in HSV channels to identify significant differences
+    _, hue_thresh = cv2.threshold(diff[:, :, 0], 100, 255, cv2.THRESH_BINARY)
+    _, sat_thresh = cv2.threshold(diff[:, :, 1], 30, 255, cv2.THRESH_BINARY)
+    _, val_thresh = cv2.threshold(diff[:, :, 2], 25, 255, cv2.THRESH_BINARY)
 
-    # Apply thresholding
-    _, hue_thresh = cv2.threshold(diff[:, :, 0], hue_thresh, 255, cv2.THRESH_BINARY)
-    _, sat_thresh = cv2.threshold(diff[:, :, 1], sat_thresh, 255, cv2.THRESH_BINARY)
-    _, val_thresh = cv2.threshold(diff[:, :, 2], val_thresh, 255, cv2.THRESH_BINARY)
-
-    # Combine the thresholds to determine foreground (use bitwise operations)
+    # Combine thresholds to get a binary mask of the foreground
     combined_mask = cv2.bitwise_or(hue_thresh, cv2.bitwise_or(sat_thresh, val_thresh))
-    #cv2.imshow("combined_mask",combined_mask)
 
-    # Post-processing
+    # Apply morphological operations to clean up the mask
     kernel = np.ones((5, 5), np.uint8)
     combined_mask = cv2.erode(combined_mask, kernel, iterations=1)
     combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
 
-    # Find contours and fill the largest one
+    # Find contours and select the largest one as the main foreground object
     contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if contours:
         max_contour = max(contours, key=cv2.contourArea)
         foreground_mask = np.zeros_like(frame)
         cv2.drawContours(foreground_mask, [max_contour], -1, (255, 255, 255), thickness=cv2.FILLED)
-        #cv2.imshow("Foreground Mask", foreground_mask)
     else:
         foreground_mask = np.zeros_like(frame)
-    
-    """cv2.imshow("combined_mask",foreground_mask)
+        max_contour = []
 
-    cv2.waitKey(0)"""
-    #cv2.destroyAllWindows()
-    # Iterate over the points in the contour
-    contour_points = []
-    for point in max_contour:
-        contour_points.append(point)
+    # Extract contour points from the largest contour
+    contour_points = [point for point in max_contour]
 
     return foreground_mask, contour_points, max_contour
 
-def mog2_method(background_path='background.avi', foreground_path = 'video.avi',history=100, varThreshold=16, detectShadows=True):
 
+def mog2_method(background_path='background.avi', foreground_path='video.avi', history=100, varThreshold=16, detectShadows=True):
+    """
+    Applies MOG2 background subtraction method to separate foreground from the background.
+
+    :param background_path: Path to the video file used to model the background.
+    :param foreground_path: Path to the video file with the foreground to be extracted.
+    :param history: The number of last frames that affect the background model.
+    :param varThreshold: Threshold on the squared Mahalanobis distance to decide whether it is well described by
+                         the background model. This parameter does not affect the background update.
+    :param detectShadows: If true, the algorithm will detect and mark shadows in the output.
+    :return: Final mask of the foreground.
+    """
+    # Initialize video capture for background and foreground videos
     cap = cv2.VideoCapture(background_path)
     cap2 = cv2.VideoCapture(foreground_path)
+
+    # Initialize the background subtractor
     fgbg = cv2.createBackgroundSubtractorMOG2(history=history, varThreshold=varThreshold, detectShadows=detectShadows)
 
+    # Apply the background subtractor to the background video to update the model
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-        _ = fgbg.apply(frame, learningRate=0.01)
+        fgbg.apply(frame, learningRate=0.01)
 
-    count = 0
+    # Apply the updated model to the foreground video
     while True:
         ret, frame = cap2.read()
         if not ret:
             break
         bg_model = fgbg.apply(frame, learningRate=0)
 
+        # Use multi-Otsu threshold to segment the foreground from the background
         threshold = threshold_multiotsu(bg_model)
+        bg_model2 = cv2.threshold(bg_model, threshold[1], 255, cv2.THRESH_BINARY)[1]
 
-        bg_model2 = cv2.threshold(bg_model,threshold[1],255,cv2.THRESH_BINARY)[1]
-
-        # Find the contours in the binary mask
-        contours, hierarchy = cv2.findContours(bg_model2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        # Find the contour with the maximum area
+        # Find contours and select the largest one
+        contours, _ = cv2.findContours(bg_model2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         max_area = 0
         max_contour = None
         for contour in contours:
@@ -214,21 +224,14 @@ def mog2_method(background_path='background.avi', foreground_path = 'video.avi',
                 max_area = area
                 max_contour = contour
 
-        # Create a blank image to draw the contour on
+        # Draw the largest contour on a blank mask and apply it to the frame
         final_mask = np.zeros_like(frame)
-
-        # Draw the contour with the maximum area on the new mask
         cv2.drawContours(final_mask, [max_contour], -1, (255, 255, 255), cv2.FILLED)
-
         frame = cv2.bitwise_and(frame, final_mask)
-
         cv2.imshow('Foreground', frame)
 
-        # Release the camera and close all windows
+    cap.release()
     cap2.release()
     cv2.destroyAllWindows()
-    cap.release()
 
     return final_mask
-
-

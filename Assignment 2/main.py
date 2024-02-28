@@ -117,22 +117,40 @@ def camera_extrinsic(mtx, dist, rvec, tvec, use_intrinsics= True, save_intrinsic
             cv2.waitKey(0)
 
 def subtraction():
+    """
+    Performs background subtraction on video frames from multiple cameras.
+
+    This function iterates through folders for different cameras, extracts frames from each camera's video,
+    and applies background subtraction to identify foreground objects.
+    """
+    # List of folder names for each camera
     camera_folders = ["cam1", "cam2", "cam3", "cam4"]
+    # Criteria for termination of the algorithm (unused in this snippet, but typically for iterative algorithms in OpenCV)
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
+    # Iterate through each camera folder
     for folder in camera_folders:
-        background_path = os.path.join('data',folder,'background.avi')
-        video_path = os.path.join('data',folder,'video.avi')
-        frames = extract_frames(video_path,interval = 1)
-        for frame in frames:
-            #mog2 method
-            #processed_frame = mog2_method(background_path, video_path)
+        # Construct path to the background and video files for the current camera
+        background_path = os.path.join('data', folder, 'background.avi')
+        video_path = os.path.join('data', folder, 'video.avi')
+        # Extract frames from the video, with an interval of 1 (every frame)
+        frames = extract_frames(video_path, interval=1)
 
-            #avergage fram method
-            processed_frame,_,_ = subtract_background(frame, averaging_background_model(background_path))
+        # Process each extracted frame
+        for frame in frames:
+            # Here, two methods for background subtraction are mentioned, with the MOG2 method commented out.
+
+            # Uncomment to use MOG2 method for background subtraction
+            # processed_frame = mog2_method(background_path, video_path)
+
+            # Use the averaging frame method for background subtraction
+            processed_frame, _, _ = subtract_background(frame, averaging_background_model(background_path))
+            # Display the processed frame
             cv2.imshow('Foreground', processed_frame)
+            # Wait for a key press; if received, break from the loop
             if cv2.waitKey(0):
                 break
+        # Destroy all OpenCV windows to clean up after processing all frames from the current folder
         cv2.destroyAllWindows()
 
 #total_error, mtx,dist, rvecs,tvecs = camera_intrinsic()
