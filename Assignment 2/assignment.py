@@ -53,21 +53,21 @@ def set_voxel_positions(width, height, depth):
         for y in range(height):
             for z in range(depth):
                 background = False
-                color = []
                 i = 0
                 for folder in camera_folders:
                     voxels = (x*block_size - width/2, y*block_size, z*block_size - depth/2)
                     # we obtain the projected point for a voxel
                     points,_ = cv2.projectPoints(voxels, rvecss[i], tvecss[i], mtxs[i], dists[i])
                     points = np.reshape(points[::-1], (2, -1)) 
+                    
                     subs = substracted[i]
                     subs = subs[:, :, 0]
                     hmask, wmask = subs.shape
                     if  0 <= points[1] < wmask and 0 <= points[0] < hmask: # we can see the point inside the mask
-                        val = subs[int(points[0]), int(points[1])]
+                        value = subs[int(points[0]), int(points[1])]
 
                         # we check if the value of the point is 0, so is background, 1 otherwise
-                        if val == 0:
+                        if value == 0:
                             background = True
 
                     if not background:
