@@ -27,8 +27,11 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
         pixel_list = []
         voxel_indices = np.where(labels == label)[0]
         print("Vsd", voxel_indices)
-        voxel_label = voxel_list[voxel_indices]
+        voxel_label = []
+        for pos in voxel_indices:
+            voxel_label.append(voxel_list[pos])
         for voxel in voxel_label:
+            print(voxel)
             pixel_i = lookup_table_selected_camera[selected_camera][tuple(voxel)]
             pixel_list.append(pixel_i)
 
