@@ -29,7 +29,7 @@ def set_voxel_positions(width, height, depth, curr_time):
 
     # initialize voxel list
     voxel_list = []
-    
+    frames_cam = []
     # swap y and z
     voxel_grid = np.ones((width, depth, height), np.float32)
     
@@ -60,6 +60,7 @@ def set_voxel_positions(width, height, depth, curr_time):
         
         # read frame
         ret, image = camera_handles[i_camera].read()
+        frames_cam.append(image)
 
         # determine foreground
         foreground_image = background_subtraction(image, background_models[i_camera])
@@ -77,6 +78,9 @@ def set_voxel_positions(width, height, depth, curr_time):
                     if projection_x < 0 or projection_y < 0 or projection_x >= foreground_image.shape[1] or projection_y >= foreground_image.shape[0] or not foreground_image[projection_y, projection_x]:
                         voxel_grid[x, z, y] = 0.0
     colors = []
+
+    lookup_table_selected_camera = {}
+    selected_camera = 1
     # put voxels that are on in list
     for x in range(width):
         for y in range(height):
@@ -84,8 +88,13 @@ def set_voxel_positions(width, height, depth, curr_time):
                 if voxel_grid[x, z, y] > 0:
                     voxel_list.append([x * block_size - width / 2, y * block_size, z * block_size - depth / 2])
                     colors.append([x / width, z / depth, y / height])
+                    voxel_index = z + y * depth + x * (depth * height)
+                    projection_x = int(lookup_table[selected_camera][voxel_index][0][0])
+                    projection_y = int(lookup_table[selected_camera][voxel_index][0][1])
+                    lookup_table_selected_camera[voxel_index] = (projection_x, projection_y)
 
-    color_model(voxel_list)
+
+    color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera)
     return voxel_list, colors
 
 
