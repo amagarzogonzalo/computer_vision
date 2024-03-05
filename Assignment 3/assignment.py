@@ -2,6 +2,7 @@ import glm
 import random
 import numpy as np
 import cv2 as cv
+from color_model import color_model
 
 # global variables
 block_size = 1.0
@@ -83,6 +84,8 @@ def set_voxel_positions(width, height, depth, curr_time):
                 if voxel_grid[x, z, y] > 0:
                     voxel_list.append([x * block_size - width / 2, y * block_size, z * block_size - depth / 2])
                     colors.append([x / width, z / depth, y / height])
+
+    color_model(voxel_list)
     return voxel_list, colors
 
 
