@@ -24,7 +24,7 @@ def generate_grid(width, depth):
 
 # determines which voxels should be set
 def set_voxel_positions(width, height, depth, curr_time):
-    testing = True
+    testing = False
     if len(lookup_table) == 0:
         create_lookup_table(width, height, depth)
 

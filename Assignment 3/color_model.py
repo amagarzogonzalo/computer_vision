@@ -37,19 +37,23 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
     pixel_label_list = []
     for label in range(4):
         pixel_list = []
+        # voxel indices for each label
         voxel_indices = np.where(labels == label)[0]
-        print("Vsd", voxel_indices)
-        voxel_label = []
+        print("Voxel indices", voxel_indices)
+        # voxels that have this label
+        voxel_with_label = []
         for pos in voxel_indices:
-            voxel_label.append(voxel_list[pos])
-        for voxel in voxel_label:
-            print(voxel)
+            voxel_with_label.append(voxel_list[pos])
+        
+        for voxel in voxel_with_label:
+            print("Voxel: ", voxel)
             pixel_i = lookup_table_selected_camera[tuple(voxel)]
+            print("Pixel: ", pixel_i)
             pixel_list.append(pixel_i)
 
             roi = np.array([frame[y, x] for [x, y] in pixel_list])
             roi = np.float32(roi)
-            print("AFsdfas: ", len(roi))
+            print("Len roi: ", len(roi))
             model = cv.ml.EM_create()
             model.setClustersNumber(4)
             model.trainEM(roi)
