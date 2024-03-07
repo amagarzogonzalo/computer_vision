@@ -1,5 +1,7 @@
 import cv2 as cv
 import numpy as np
+from collections import Counter
+
 
 def clustering(voxel_list, N=4):
     print(voxel_list)
@@ -7,10 +9,20 @@ def clustering(voxel_list, N=4):
     voxel_list = np.array(voxel_list).astype(np.float32)[:, [0, 2]] 
     print(voxel_list)
 
+    
     # define criteria and apply kmeans()
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    ret,labels,centers=cv.kmeans(voxel_list,N,None,criteria,10,cv.KMEANS_RANDOM_CENTERS)
+    ret,labels,centers=cv.kmeans(voxel_list,N,None,criteria,10,cv.KMEANS_RANDOM_CENTERS)   
 
+    unique, counts = np.unique(labels, return_counts=True)
+
+    with open('labels.txt', 'w') as f:
+        f.write("Frequency of each label:\n")
+        f.write("Label {}: {}\n".format(unique, counts))
+        f.write("\n")  
+
+        for label in labels:
+            f.write("%s\n" % label)   
     return labels, centers
 
 
@@ -32,11 +44,12 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
             voxel_label.append(voxel_list[pos])
         for voxel in voxel_label:
             print(voxel)
-            pixel_i = lookup_table_selected_camera[selected_camera][tuple(voxel)]
+            pixel_i = lookup_table_selected_camera[tuple(voxel)]
             pixel_list.append(pixel_i)
 
             roi = np.array([frame[y, x] for [x, y] in pixel_list])
             roi = np.float32(roi)
+            print("AFsdfas: ", len(roi))
             model = cv.ml.EM_create()
             model.setClustersNumber(4)
             model.trainEM(roi)

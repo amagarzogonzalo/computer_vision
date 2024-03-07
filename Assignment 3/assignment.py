@@ -24,6 +24,7 @@ def generate_grid(width, depth):
 
 # determines which voxels should be set
 def set_voxel_positions(width, height, depth, curr_time):
+    testing = True
     if len(lookup_table) == 0:
         create_lookup_table(width, height, depth)
 
@@ -58,10 +59,17 @@ def set_voxel_positions(width, height, depth, curr_time):
             camera_handles.append(cv.VideoCapture(path_name + '/video.avi'))
             num_frames = int(camera_handles[i_camera].get(cv.CAP_PROP_FRAME_COUNT))
         
+        # Alex: Check - select a determined number of dataframe, should be okay
+        frame_number = 10   
+        camera_handles[i_camera].set(cv.CAP_PROP_POS_FRAMES, frame_number - 1)
+
         # read frame
         ret, image = camera_handles[i_camera].read()
         frames_cam.append(image)
 
+        if testing:
+            cv.imshow('selected frame cam: {i_camera}',image)
+            cv.waitKey(0)
         # determine foreground
         foreground_image = background_subtraction(image, background_models[i_camera])
 
@@ -86,12 +94,13 @@ def set_voxel_positions(width, height, depth, curr_time):
         for y in range(height):
             for z in range(depth):
                 if voxel_grid[x, z, y] > 0:
-                    voxel_list.append([x * block_size - width / 2, y * block_size, z * block_size - depth / 2])
+                    voxel = [x * block_size - width / 2, y * block_size, z * block_size - depth / 2]
+                    voxel_list.append(voxel)
                     colors.append([x / width, z / depth, y / height])
                     voxel_index = z + y * depth + x * (depth * height)
                     projection_x = int(lookup_table[selected_camera][voxel_index][0][0])
                     projection_y = int(lookup_table[selected_camera][voxel_index][0][1])
-                    lookup_table_selected_camera[voxel_index] = (projection_x, projection_y)
+                    lookup_table_selected_camera[tuple(voxel)] = (projection_x, projection_y)
 
 
     color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera)
