@@ -61,8 +61,8 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
                     new_color = [255,0,0]
                 elif label == 3:
                     new_color = [255,255,0]
-                
-                new_colors.append(np.array(new_color,dtype= np.float32))
+                new_colors.append(new_color)
+                #new_colors.append(np.array(new_color,dtype= np.float32))
                 
         print(f"Label {label}: Found {len(pixel_list)} corresponding pixels in lookup table.")
 
@@ -78,6 +78,12 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
 
             # Store the GMM model
             color_models.append(model)
+            num_components = model.n_components
+            mean_color_cluster = []
+            for component in range(num_components):
+                mean_color = model.means_[component]
+                mean_color_three = np.append(mean_color,255) # It has 2 channels
+                mean_color_cluster.append(mean_color_three)
 
                 
         else:
@@ -85,6 +91,22 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
             color_models.append(None)
 
         pixel_label_list.append(pixel_list)
+
+    """for i in range(len(new_colors)):
+        color = new_colors[i]
+        if color == [0,0,255]:
+            new_colors[i] = mean_color_cluster[0]
+        elif color == [0,255,0]:
+            new_colors[i] = mean_color_cluster[1]
+
+        elif color == [255,0,0]:
+            new_colors[i] = mean_color_cluster[2]
+
+        elif color == [255,255,0]:
+            new_colors[i] = mean_color_cluster[3]
+"""
+
+
     return new_voxel_list, new_colors, color_models, pixel_label_list
 
 
