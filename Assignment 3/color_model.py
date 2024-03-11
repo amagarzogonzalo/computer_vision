@@ -9,9 +9,7 @@ from scipy.interpolate import interp1d
 
 
 def clustering(voxel_list, N=4):
-    print(voxel_list)
     voxel_list = np.array(voxel_list).astype(np.float32)[:, [0, 2]]
-    print(voxel_list)
 
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
     ret, labels, centers = cv.kmeans(voxel_list, N, None, criteria, 10, cv.KMEANS_RANDOM_CENTERS)
@@ -32,6 +30,8 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
 
     color_models = []
     pixel_label_list = []
+    new_voxel_list = []
+    new_colors = []
 
     for label in range(len(np.unique(labels))):
         print(f"Processing label {label}.")
@@ -50,7 +50,20 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
             pixel = lookup_table_selected_camera.get(tuple(voxel), None)
             if pixel:
                 pixel_list.append(pixel)
-
+                new_voxel_list.append(voxel)
+          
+                new_color = [0,0,255]
+                #new_color = np.array([0,0,255], dtype=np.float32)
+                
+                if label == 1:
+                    new_color = [0,255,0]
+                elif label == 2:
+                    new_color = [255,0,0]
+                elif label == 3:
+                    new_color = [255,255,0]
+                
+                new_colors.append(np.array(new_color,dtype= np.float32))
+                
         print(f"Label {label}: Found {len(pixel_list)} corresponding pixels in lookup table.")
 
         if len(pixel_list) > 0:
@@ -65,13 +78,14 @@ def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_ta
 
             # Store the GMM model
             color_models.append(model)
+
+                
         else:
             print(f"Not enough pixels to train GMM model for label {label}, skipping.")
             color_models.append(None)
 
         pixel_label_list.append(pixel_list)
-
-    return color_models, pixel_label_list
+    return new_voxel_list, new_colors, color_models, pixel_label_list
 
 
 def paint_image(image, pixel_list):
@@ -98,6 +112,7 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
 
     labels, centers = clustering(voxel_list)
 
-    _, pixel_list  = construct_color_model(voxel_list, labels, centers, frames_cam[selected_camera], lookup_table_selected_camera, selected_camera)
-    paint_image(frames_cam[selected_camera], pixel_list)
+    new_voxel_list, new_colors, color_models, pixel_label_list  = construct_color_model(voxel_list, labels, centers, frames_cam[selected_camera], lookup_table_selected_camera, selected_camera)
+    paint_image(frames_cam[selected_camera], pixel_label_list)
+    return new_voxel_list, new_colors
 
