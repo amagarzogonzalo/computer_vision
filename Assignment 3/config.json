@@ -2,7 +2,7 @@
     "app_name": "3D Voxel Visualizer",
     "debug_mode": false,
     "fullscreen": false,
-    "world_width": 128,
+    "world_width": 169,
     "world_height": 64,
     "world_depth": 128,
     "window_width": 1280,

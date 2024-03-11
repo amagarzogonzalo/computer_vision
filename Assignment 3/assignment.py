@@ -104,6 +104,10 @@ def set_voxel_positions(width, height, depth, curr_time):
 
 
     color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera)
+
+    print("i ran")
+    print("Min height in voxel_list:", np.min(voxel_list))
+    print("Max height in voxel_list:", np.max(voxel_list))
     return voxel_list, colors
 
 
