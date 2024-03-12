@@ -2,7 +2,7 @@ import glm
 import random
 import numpy as np
 import cv2 as cv
-from color_model import color_model
+from color_model import color_model, online_phase
 
 # global variables
 block_size = 1.0
@@ -121,8 +121,12 @@ def set_voxel_positions(width, height, depth, curr_time):
 
 
     if make_first_offline:
-        new_voxel_list, new_colors =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
+        new_voxel_list, new_colors, colors_model =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
         make_first_offline = False
+
+
+    new_voxel_list, new_colors = online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
+
     print("i ran")
     print("Min height in voxel_list:", np.min(voxel_list))
     print("Max height in voxel_list:", np.max(voxel_list))

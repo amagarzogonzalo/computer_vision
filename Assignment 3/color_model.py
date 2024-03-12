@@ -9,6 +9,36 @@ from scipy import optimize
 from scipy.interpolate import interp1d
 
 
+
+def read_all_frames(duration_video_secs= 53, total_frames_camera_i=10):
+    # frames for all cameras
+    frames = []
+    # interval between frames: 24 seconds and we are looking for 10 frames
+    interval = duration_video_secs * 1000 / total_frames_camera_i
+    for i in range(4):
+        # frames for each camera
+        aux_frames = [] 
+        path_name = f'data/cam{i+1}/'
+
+        camera_handle = cv.VideoCapture(path_name + '/video.avi')
+        #num_frames = int(camera_handle[i].get(cv.CAP_PROP_FRAME_COUNT))
+
+        j = 0
+        while len(aux_frames) < total_frames_camera_i:
+            # read frames for each camera and store it in auxframes = frames of camera i
+            camera_handle.set(cv.CAP_PROP_POS_MSEC, j * interval)
+
+            _, frame = camera_handle.read()
+            if frame is None:
+                break
+            aux_frames.append(frame)
+            j+=1
+        camera_handle.release()
+        frames.append(aux_frames)
+
+
+    return frames
+
 def remove_outliers_from_clusters(voxel_list, labels, centers):
 
     distances = np.linalg.norm(voxel_list - centers[labels], axis=1)
@@ -50,10 +80,10 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
     pixel_label_list_cameras = []
 
     for i in range(4):
+        print(f"Camera: {i+1}")
         labels = np.ravel(labels)
         frame = cv.cvtColor(frames_cam[i], cv.COLOR_BGR2HSV)
-        cv.imshow("auxiliar", frames_cam[i])
-        cv.waitKey(0)
+        
 
         pixel_label_list = []
         new_voxel_list = []
@@ -166,44 +196,6 @@ def paint_image(image, pixel_list):
     cv.destroyAllWindows()
 
 
-def online(voxel_list, labels, centers, lookup_table_every_camera, frames_cam):
-    color_models = []
-
-    for i in range(4):
-        labels = np.ravel(labels)
-        frame = cv.cvtColor(frames_cam[i], cv.COLOR_BGR2HSV)
-
-        for label in range(len(np.unique(labels))):
-
-            voxels_person = np.array(voxel_list)[labels == label]
-
-            # Calculate the 't-shirt' and 'head' cutoffs
-            tshirt = np.mean(voxels_person[:, 1])
-            head = np.max(voxels_person[:, 1])
-            # Create ROI based on 'tshirt' and 'head' values
-            voxel_roi = (voxels_person[:, 1] > tshirt) & (voxels_person[:, 1] < 3 / 4 * head)
-            voxels_person_roi = voxels_person[voxel_roi]
-
-            pixel_list = []
-            for voxel in voxels_person_roi:
-                pixel = lookup_table_every_camera[i + 1].get(tuple(voxel), None)
-                if pixel:
-                    pixel_list.append(pixel)
-
-            if len(pixel_list) > 0:
-                # Convert list of (x, y) pixel coordinates to ROI for GMM
-                roi = np.array([frame[y, x] for x, y in pixel_list])
-                roi = np.float32(roi)
-
-                # Create and train the GMM (EM) model
-                model = GaussianMixture(n_components=4, covariance_type='full')
-                model.fit(roi[:, :2])
-
-                color_models.append(model)
-            else:
-                color_models.append(None)
-
-    return color_models
 
 def calculate_gmm_distance(gmm1, gmm2):
     distance = np.sum(np.linalg.norm(gmm1.means_ - gmm2.means_, axis=1))
@@ -255,4 +247,20 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
     new_voxel_list, new_colors, color_models, pixel_label_list_cameras  = construct_color_model(voxel_list, labels, centers, lookup_table_every_camera, frames_cam)
     selected_camera_aux = 1 # camera that we want to see in the view
     paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
-    return new_voxel_list, new_colors
+    return new_voxel_list, new_colors, color_models
+
+
+
+def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time) :
+
+    labels, centers = clustering(voxel_list)
+    frames = read_all_frames()
+    print(len(frames), "..", len(frames[0]), "..", len(frames[1]))
+    cv.imshow("aux0", frames[2][9])
+
+    cv.imshow("aux1", frames[0][9])
+    cv.imshow("aux2", frames[0][0])
+    cv.imshow("aux3", frames[3][0])
+    cv.waitKey(0)
+    for i in range(4):
+        frame = cv.cvtColor()
