@@ -1,11 +1,27 @@
 import cv2 as cv
 import numpy as np
 from sklearn.mixture import GaussianMixture
+from scipy.optimize import linear_sum_assignment
 from collections import Counter
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from scipy import optimize
 from scipy.interpolate import interp1d
+
+
+def remove_outliers_from_clusters(voxel_list, labels, centers):
+
+    distances = np.linalg.norm(voxel_list - centers[labels], axis=1)
+
+    threshold = np.percentile(distances, 95)
+
+    filter_mask = distances < threshold
+    voxels_filtered = voxel_list[filter_mask]
+
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
+    ret, labels_filtered, centers_filtered = cv.kmeans(voxels_filtered.astype(np.float32), len(centers), None, criteria, 10, cv.KMEANS_PP_CENTERS)
+
+    return voxels_filtered, labels_filtered, centers_filtered
 
 
 
@@ -150,11 +166,86 @@ def paint_image(image, pixel_list):
     cv.destroyAllWindows()
 
 
+def online(voxel_list, labels, centers, lookup_table_every_camera, frames_cam):
+    color_models = []
 
-def online():
-    a  =2
+    for i in range(4):
+        labels = np.ravel(labels)
+        frame = cv.cvtColor(frames_cam[i], cv.COLOR_BGR2HSV)
+
+        for label in range(len(np.unique(labels))):
+
+            voxels_person = np.array(voxel_list)[labels == label]
+
+            # Calculate the 't-shirt' and 'head' cutoffs
+            tshirt = np.mean(voxels_person[:, 1])
+            head = np.max(voxels_person[:, 1])
+            # Create ROI based on 'tshirt' and 'head' values
+            voxel_roi = (voxels_person[:, 1] > tshirt) & (voxels_person[:, 1] < 3 / 4 * head)
+            voxels_person_roi = voxels_person[voxel_roi]
+
+            pixel_list = []
+            for voxel in voxels_person_roi:
+                pixel = lookup_table_every_camera[i + 1].get(tuple(voxel), None)
+                if pixel:
+                    pixel_list.append(pixel)
+
+            if len(pixel_list) > 0:
+                # Convert list of (x, y) pixel coordinates to ROI for GMM
+                roi = np.array([frame[y, x] for x, y in pixel_list])
+                roi = np.float32(roi)
+
+                # Create and train the GMM (EM) model
+                model = GaussianMixture(n_components=4, covariance_type='full')
+                model.fit(roi[:, :2])
+
+                color_models.append(model)
+            else:
+                color_models.append(None)
+
+    return color_models
+
+def calculate_gmm_distance(gmm1, gmm2):
+    distance = np.sum(np.linalg.norm(gmm1.means_ - gmm2.means_, axis=1))
+    return distance
 
 
+def match_and_track(current_color_models, offline_color_models):
+    num_current = len(current_color_models)
+    num_offline = len(offline_color_models)
+    cost_matrix = np.zeros((num_current, num_offline))
+
+    for i, current_model in enumerate(current_color_models):
+        for j, offline_model in enumerate(offline_color_models):
+            cost_matrix[i, j] = calculate_gmm_distance(current_model, offline_model)
+
+    row_indices, col_indices = linear_sum_assignment(cost_matrix)
+
+    # Map current clusters to individuals based on matching
+    mapping = dict(zip(row_indices, col_indices))
+    return mapping
+
+
+def process_frame_and_track(voxel_list, frames_cam, lookup_table_every_camera, offline_color_models):
+
+    labels, centers = clustering(voxel_list)
+
+    # Construct color models for the current frame
+    _, _, current_color_models, _ = construct_color_model(voxel_list, labels, centers, lookup_table_every_camera,frames_cam)
+
+    # Extract GMMs for comparison
+    current_gmms = []
+    for model in current_color_models:
+        if model is not None:
+            current_gmms.append(model)
+
+    # Match current clusters to offline individuals and track them
+    mapping = match_and_track(current_gmms, offline_color_models)
+
+    # Track the 2D position of each individual based on cluster centers
+    tracked_positions = {person_id: centers[cluster_id] for cluster_id, person_id in mapping.items()}
+
+    return tracked_positions
 
 
 def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera):
@@ -165,4 +256,3 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
     selected_camera_aux = 1 # camera that we want to see in the view
     paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
     return new_voxel_list, new_colors
-
