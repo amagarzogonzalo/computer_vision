@@ -10,7 +10,7 @@ from scipy.interpolate import interp1d
 
 
 
-def read_all_frames(duration_video_secs= 53, total_frames_camera_i=53):
+def read_all_frames(duration_video_secs= 53, total_frames_camera_i=10):
     # frames for all cameras
     frames = []
     # interval between frames: 24 seconds and we are looking for 10 frames
@@ -21,7 +21,6 @@ def read_all_frames(duration_video_secs= 53, total_frames_camera_i=53):
         path_name = f'data/cam{i+1}/'
 
         camera_handle = cv.VideoCapture(path_name + '/video.avi')
-        #num_frames = int(camera_handle[i].get(cv.CAP_PROP_FRAME_COUNT))
 
         j = 0
         while len(aux_frames) < total_frames_camera_i:
@@ -71,7 +70,7 @@ def clustering(voxel_list, N=4, debug = False):
                 f.write(f"{label}\n")
 
 
-    return labels, centers, voxel_list
+    return labels, centers
 
 def get_colour (label):
     #TODO: is it good? 
@@ -210,14 +209,18 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
 
     selected_camera_aux = 1
     paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
-    return new_voxel_list, new_colors
+    return new_voxel_list, new_colors, color_models
 
 
 
 def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time, debug= True) :
     print("---Online phase---")
-    labels, centers, _ = clustering(voxel_list)
+    voxels_filtered, _ = remove_outliers_iqr(np.array(voxel_list))
+
+    labels, centers = clustering(voxels_filtered)
+
     frames = read_all_frames()
+
     probabilities_labels = [None, None, None, None]
     calculated_labes = [None, None, None, None]
     new_voxel_list = []
