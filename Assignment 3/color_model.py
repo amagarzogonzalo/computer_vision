@@ -221,7 +221,7 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
 
     frames = read_all_frames()
 
-    probabilities_labels = [None, None, None, None]
+    probabilities_labels = []
     calculated_labes = [None, None, None, None]
     new_voxel_list = []
     number_voxels_label = [None, None, None, None]
@@ -236,7 +236,7 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
             # voxels that have this label
             label_voxel = []
 
-            voxels_person = np.array(voxel_list)[labels == label]
+            voxels_person = np.array(voxels_filtered)[labels == label]
 
             # Calculate the 't-shirt' and 'head' cutoffs
             tshirt = np.mean(voxels_person[:, 1])
@@ -266,21 +266,21 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
 
             number_voxels_label[i] = auxiliar_number_voxels_label
             # first part of online - match colour with cluster
-            probabilities = [None, None, None, None]
+            probabilities = []
             # for each cluster:  len of color models of camera i
             for j in range(len(colors_model[i])):
                 roi = np.array([frame[y, x][:2] for x, y in pixel_list])
                 roi = np.float32(roi)
                 total_prob = 0
                 for sample in roi:
-                    print(sample)
+                    #print(sample)
                     # we have 1d array and we need a 2d array
                     sample_2d = sample.reshape(1, -1)
-                    print(sample_2d)
-                    prob = colors_model[i][j].predict(sample_2d)
+                    #print(sample_2d)
+                    prob = colors_model[i][j].predict_proba(sample_2d)
                     total_prob += prob
-                probabilities[j] = total_prob
-        probabilities_labels[i] = probabilities
+                probabilities.append(total_prob)
+        probabilities_labels.append(probabilities)
         # match person and colour
 
         print(np.array(probabilities_labels))
