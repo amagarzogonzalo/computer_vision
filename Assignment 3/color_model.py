@@ -39,19 +39,19 @@ def read_all_frames(duration_video_secs= 53, total_frames_camera_i=53):
 
     return frames
 
-def remove_outliers_from_clusters(voxel_list, labels, centers):
+def remove_outliers_iqr(voxel_list):
+    Q1 = np.percentile(voxel_list, 25, axis=0)
+    Q3 = np.percentile(voxel_list, 75, axis=0)
+    IQR = Q3 - Q1
 
-    distances = np.linalg.norm(voxel_list - centers[labels], axis=1)
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
 
-    threshold = np.percentile(distances, 95)
+    # Keep voxels within the bounds for all dimensions
+    inlier_mask = np.all((voxel_list >= lower_bound) & (voxel_list <= upper_bound), axis=1)
+    voxels_filtered = voxel_list[inlier_mask]
 
-    filter_mask = distances < threshold
-    voxels_filtered = voxel_list[filter_mask]
-
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
-    ret, labels_filtered, centers_filtered = cv.kmeans(voxels_filtered.astype(np.float32), len(centers), None, criteria, 10, cv.KMEANS_PP_CENTERS)
-
-    return voxels_filtered, labels_filtered, centers_filtered
+    return voxels_filtered, None
 
 
 
@@ -201,13 +201,17 @@ def paint_image(image, pixel_list):
 
 
 def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera):
+    # Remove outliers from the entire voxel_list before clustering
+    voxels_filtered, _ = remove_outliers_iqr(np.array(voxel_list))
 
-    labels, centers, _ = clustering(voxel_list)
+    labels, centers = clustering(voxels_filtered)
 
-    new_voxel_list, new_colors, color_models, pixel_label_list_cameras = construct_color_model(voxel_list, labels, centers, lookup_table_every_camera, frames_cam)
-    selected_camera_aux = 1 # camera that we want to see in the view
-    #paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
-    return new_voxel_list, new_colors, color_models
+    new_voxel_list, new_colors, color_models, pixel_label_list_cameras = construct_color_model(voxels_filtered, labels, centers, lookup_table_every_camera, frames_cam)
+
+    selected_camera_aux = 1
+    paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
+    return new_voxel_list, new_colors
+
 
 
 def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time, debug= True) :
