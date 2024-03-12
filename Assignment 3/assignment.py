@@ -25,12 +25,14 @@ def generate_grid(width, depth):
 # determines which voxels should be set
 def set_voxel_positions(width, height, depth, curr_time):
     testing = False
+    make_first_offline = False
     if len(lookup_table) == 0:
         create_lookup_table(width, height, depth)
+        make_first_offline = True
 
     # initialize voxel list
     voxel_list = []
-    frames_cam = []
+    frames_cam = [None, None, None, None]
     # swap y and z
     voxel_grid = np.ones((width, depth, height), np.float32)
     
@@ -65,8 +67,10 @@ def set_voxel_positions(width, height, depth, curr_time):
 
         # read frame
         ret, image = camera_handles[i_camera].read()
-        frames_cam.append(image)
-
+        frames_cam[i_camera] = image
+        
+        """cv.imshow("auxiliar", frames_cam[i_camera])
+        cv.waitKey(0)"""
         if testing:
             cv.imshow('selected frame cam: {i_camera}',image)
             cv.waitKey(0)
@@ -87,7 +91,15 @@ def set_voxel_positions(width, height, depth, curr_time):
                         voxel_grid[x, z, y] = 0.0
     colors = []
 
+    
     lookup_table_selected_camera = {}
+    # choice of using all the cameras for the model
+    lookup_table_every_camera = {
+        1: {},
+        2: {},
+        3: {},
+        4: {}
+    }
     selected_camera = 1
     # put voxels that are on in list
     for x in range(width):
@@ -100,14 +112,20 @@ def set_voxel_positions(width, height, depth, curr_time):
                     voxel_index = z + y * depth + x * (depth * height)
                     projection_x = int(lookup_table[selected_camera][voxel_index][0][0])
                     projection_y = int(lookup_table[selected_camera][voxel_index][0][1])
+                    # for just one camera
                     lookup_table_selected_camera[tuple(voxel)] = (projection_x, projection_y)
+                    # for every camera
+                    for i in range(4):
+                        new_value = {tuple(voxel): (projection_x, projection_y)}
+                        lookup_table_every_camera[i+1].update(new_value)
 
 
-    new_voxel_list, new_colors =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera)
+    if make_first_offline:
+        new_voxel_list, new_colors =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
+        make_first_offline = False
     print("i ran")
     print("Min height in voxel_list:", np.min(voxel_list))
     print("Max height in voxel_list:", np.max(voxel_list))
-    print("Shapes: ", len(new_colors), "---", len(new_voxel_list))
     return new_voxel_list, new_colors
 
     return voxel_list, colors

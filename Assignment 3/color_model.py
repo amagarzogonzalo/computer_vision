@@ -8,11 +8,14 @@ from scipy import optimize
 from scipy.interpolate import interp1d
 
 
+
 def clustering(voxel_list, N=4):
     voxel_list = np.array(voxel_list).astype(np.float32)[:, [0, 2]]
 
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
-    ret, labels, centers = cv.kmeans(voxel_list, N, None, criteria, 10, cv.KMEANS_RANDOM_CENTERS)
+    ret, labels, centers = cv.kmeans(voxel_list, N, None, criteria, 10, cv.KMEANS_PP_CENTERS)
+
+    #ret, labels, centers = cv.kmeans(voxel_list, N, None, criteria, 10, cv.KMEANS_RANDOM_CENTERS)
 
     unique, counts = np.unique(labels, return_counts=True)
 
@@ -21,93 +24,111 @@ def clustering(voxel_list, N=4):
         f.write(f"Label {unique}: {counts}\n\n")
         for label in labels:
             f.write(f"{label}\n")
+
+
     return labels, centers
 
 
-def construct_color_model(voxel_list, labels, centers, selected_frame, lookup_table_selected_camera, selected_camera):
-    labels = np.ravel(labels)
-    frame = cv.cvtColor(selected_frame, cv.COLOR_BGR2HSV)
-
+def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera, frames_cam):
     color_models = []
-    pixel_label_list = []
-    new_voxel_list = []
-    new_colors = []
+    pixel_label_list_cameras = []
 
-    for label in range(len(np.unique(labels))):
-        print(f"Processing label {label}.")
-        # Filter voxels by label
-        voxels_person = np.array(voxel_list)[labels == label]
+    for i in range(4):
+        labels = np.ravel(labels)
+        frame = cv.cvtColor(frames_cam[i], cv.COLOR_BGR2HSV)
+        cv.imshow("auxiliar", frames_cam[i])
+        cv.waitKey(0)
 
-        # Calculate the 't-shirt' and 'head' cutoffs
-        tshirt = np.mean(voxels_person[:, 1])
-        head = np.max(voxels_person[:, 1])
-        # Create ROI based on 'tshirt' and 'head' values
-        voxel_roi = (voxels_person[:, 1] > tshirt) & (voxels_person[:, 1] < 3 / 4 * head)
-        voxels_person_roi = voxels_person[voxel_roi]
+        pixel_label_list = []
+        new_voxel_list = []
+        new_colors = []
+        colors = []
+        
+        for label in range(len(np.unique(labels))):
+            print(f"Processing label {label}.")
+            # Filter voxels by label
+            voxels_person = np.array(voxel_list)[labels == label]
 
-        pixel_list = []
-        for voxel in voxels_person_roi:
-            pixel = lookup_table_selected_camera.get(tuple(voxel), None)
-            if pixel:
-                pixel_list.append(pixel)
-                new_voxel_list.append(voxel)
-          
-                new_color = [0,0,255]
-                #new_color = np.array([0,0,255], dtype=np.float32)
-                
-                if label == 1:
-                    new_color = [0,255,0]
-                elif label == 2:
-                    new_color = [255,0,0]
-                elif label == 3:
-                    new_color = [255,255,0]
-                new_colors.append(new_color)
-                #new_colors.append(np.array(new_color,dtype= np.float32))
-                
-        print(f"Label {label}: Found {len(pixel_list)} corresponding pixels in lookup table.")
+            # Calculate the 't-shirt' and 'head' cutoffs
+            tshirt = np.mean(voxels_person[:, 1])
+            head = np.max(voxels_person[:, 1])
+            # Create ROI based on 'tshirt' and 'head' values
+            voxel_roi = (voxels_person[:, 1] > tshirt) & (voxels_person[:, 1] < 3 / 4 * head)
+            voxels_person_roi = voxels_person[voxel_roi]
 
-        if len(pixel_list) > 0:
-            # Convert list of (x, y) pixel coordinates to ROI for GMM
-            roi = np.array([frame[y, x] for x, y in pixel_list])
-            roi = np.float32(roi)
+            pixel_list = []
+            for voxel in voxels_person_roi:
+                #pixel = lookup_table_selected_camera.get(tuple(voxel), None)
+                pixel = lookup_table_every_camera[i+1].get(tuple(voxel), None)
 
-            # Create and train the GMM (EM) model
-            model = GaussianMixture(n_components=4, covariance_type='full')
-            model.fit(roi[:, :2])  # Fit to the H and S channels
-            print(f"Successfully trained GMM model for label {label}.")
+                if pixel:
+                    pixel_list.append(pixel)
+                    new_voxel_list.append(voxel)
+            
+                    new_color = [0,0,255]
+                    #new_color = np.array([0,0,255], dtype=np.float32)
+                    
+                    if label == 1:
+                        new_color = [0,255,0]
+                    elif label == 2:
+                        new_color = [255,0,0]
+                    elif label == 3:
+                        new_color = [255,255,0]
+                    new_colors.append(new_color)
+                    #new_colors.append(np.array(new_color,dtype= np.float32))
+                    
+            print(f"Label {label}: Found {len(pixel_list)} corresponding pixels in lookup table.")
 
-            # Store the GMM model
-            color_models.append(model)
-            num_components = model.n_components
-            mean_color_cluster = []
-            for component in range(num_components):
-                mean_color = model.means_[component]
-                mean_color_three = np.append(mean_color,255) # It has 2 channels
-                mean_color_cluster.append(mean_color_three)
+            if len(pixel_list) > 0:
+                # Convert list of (x, y) pixel coordinates to ROI for GMM
+                roi = np.array([frame[y, x] for x, y in pixel_list])
+                roi = np.float32(roi)
 
-                
-        else:
-            print(f"Not enough pixels to train GMM model for label {label}, skipping.")
-            color_models.append(None)
+                # Create and train the GMM (EM) model
+                model = GaussianMixture(n_components=4, covariance_type='full')
+                model.fit(roi[:, :2])  # Fit to the H and S channels
+                print(f"Successfully trained GMM model for label {label}.")
 
-        pixel_label_list.append(pixel_list)
+                # Store the GMM model
+                colors.append(model)
+
+
+                #TODO: Do not know yet if it is useful
+                num_components = model.n_components
+                mean_color_cluster = []
+                for component in range(num_components):
+                    mean_color = model.means_[component]
+                    mean_color_three = np.append(mean_color,255) # It has 2 channels
+                    mean_color_cluster.append(mean_color_three)
+
+                    
+            else:
+                print(f"Not enough pixels to train GMM model for label {label}, skipping.")
+                colors.append(None)
+
+            pixel_label_list.append(pixel_list)
+
+        color_models.append(colors)
+        pixel_label_list_cameras.append(pixel_label_list)
+
+
+
+    return new_voxel_list, new_colors, color_models, pixel_label_list_cameras
+
 
     """for i in range(len(new_colors)):
-        color = new_colors[i]
-        if color == [0,0,255]:
-            new_colors[i] = mean_color_cluster[0]
-        elif color == [0,255,0]:
-            new_colors[i] = mean_color_cluster[1]
+            color = new_colors[i]
+            if color == [0,0,255]:
+                new_colors[i] = mean_color_cluster[0]
+            elif color == [0,255,0]:
+                new_colors[i] = mean_color_cluster[1]
 
-        elif color == [255,0,0]:
-            new_colors[i] = mean_color_cluster[2]
+            elif color == [255,0,0]:
+                new_colors[i] = mean_color_cluster[2]
 
-        elif color == [255,255,0]:
-            new_colors[i] = mean_color_cluster[3]
-"""
-
-
-    return new_voxel_list, new_colors, color_models, pixel_label_list
+            elif color == [255,255,0]:
+                new_colors[i] = mean_color_cluster[3]
+    """
 
 
 def paint_image(image, pixel_list):
@@ -130,11 +151,18 @@ def paint_image(image, pixel_list):
 
 
 
-def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera):
+def online():
+    a  =2
 
-    labels, centers = clustering(voxel_list)
 
-    new_voxel_list, new_colors, color_models, pixel_label_list  = construct_color_model(voxel_list, labels, centers, frames_cam[selected_camera], lookup_table_selected_camera, selected_camera)
-    paint_image(frames_cam[selected_camera], pixel_label_list)
+
+
+def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera):
+
+    labels, centers,  = clustering(voxel_list)
+
+    new_voxel_list, new_colors, color_models, pixel_label_list_cameras  = construct_color_model(voxel_list, labels, centers, lookup_table_every_camera, frames_cam)
+    selected_camera_aux = 1 # camera that we want to see in the view
+    paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
     return new_voxel_list, new_colors
 
