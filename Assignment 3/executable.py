@@ -184,10 +184,15 @@ def key_callback(window, key, scancode, action, mods):
     if key == glfw.KEY_ESCAPE and action == glfw.PRESS:
         glfw.set_window_should_close(window, glfw.TRUE)
     if key == glfw.KEY_G and action == glfw.PRESS:
-        global cube, curr_time
-        positions, colors = set_voxel_positions(config['world_width'], config['world_height'], config['world_width'], curr_time)
-        curr_time += 1
-        cube.set_multiple_positions(positions, colors)
+        while True:
+
+            global cube, curr_time
+            positions, colors = set_voxel_positions(config['world_width'], config['world_height'], config['world_width'], curr_time)
+            curr_time += 5
+            cube.set_multiple_positions(positions, colors)
+
+            if curr_time == 50:
+                break
 
 
 def mouse_move(win, pos_x, pos_y):

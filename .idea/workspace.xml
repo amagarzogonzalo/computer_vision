@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f8667705-9cbd-46cd-892e-6a125b25d1ae" name="Changes" comment="online edits plot">
+      <change beforePath="$PROJECT_DIR$/Assignment 3/assignment.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment 3/assignment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment 3/color_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment 3/color_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment 3/debug.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment 3/debug.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment 3/executable.py" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment 3/executable.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assignment 3/labels.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Assignment 3/labels.txt" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="TaskManager">
+    <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="online edits plot" />
+    <option name="LAST_COMMIT_MESSAGE" value="online edits plot" />
+  </component>
+</project>

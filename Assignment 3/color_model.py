@@ -8,17 +8,19 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy import optimize
 from scipy.interpolate import interp1d
 
+
 trajectory_data = []
 
-def read_all_frames(duration_video_secs= 53, total_frames_camera_i=10):
+
+def read_all_frames(duration_video_secs=53, total_frames_camera_i=10):
     # frames for all cameras
     frames = []
     # interval between frames: 24 seconds and we are looking for 10 frames
     interval = duration_video_secs * 1000 / total_frames_camera_i
     for i in range(4):
         # frames for each camera
-        aux_frames = [] 
-        path_name = f'data/cam{i+1}/'
+        aux_frames = []
+        path_name = f'data/cam{i + 1}/'
 
         camera_handle = cv.VideoCapture(path_name + '/video.avi')
 
@@ -31,12 +33,12 @@ def read_all_frames(duration_video_secs= 53, total_frames_camera_i=10):
             if frame is None:
                 break
             aux_frames.append(frame)
-            j+=1
+            j += 1
         camera_handle.release()
         frames.append(aux_frames)
 
-
     return frames
+
 
 def remove_outliers_iqr(voxel_list):
     Q1 = np.percentile(voxel_list, 25, axis=0)
@@ -53,8 +55,7 @@ def remove_outliers_iqr(voxel_list):
     return voxels_filtered, None
 
 
-
-def clustering(voxel_list, N=4, debug = True):
+def clustering(voxel_list, N=4, debug=True):
     voxel_list = np.array(voxel_list).astype(np.float32)[:, [0, 2]]
 
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
@@ -69,19 +70,19 @@ def clustering(voxel_list, N=4, debug = True):
             for label in labels:
                 f.write(f"{label}\n")
 
-
     return labels, centers
 
-def get_colour (label):
-    #TODO: is it good? 
+
+def get_colour(label):
+    # TODO: is it good?
     if label == 0:
-        return [0,0,255]
+        return [0, 0, 255]
     elif label == 1:
-        return [0,255,0]
+        return [0, 255, 0]
     elif label == 2:
-        return [255,0,0]
+        return [255, 0, 0]
     elif label == 3:
-        return [255,255,0]
+        return [255, 255, 0]
 
 
 def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera, frames_cam):
@@ -89,16 +90,15 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
     pixel_label_list_cameras = []
 
     for i in range(4):
-        print(f"Camera: {i+1}")
+        print(f"Camera: {i + 1}")
         labels = np.ravel(labels)
         frame = cv.cvtColor(frames_cam[i], cv.COLOR_BGR2HSV)
-        
 
         pixel_label_list = []
         new_voxel_list = []
         new_colors = []
         colors = []
-        
+
         for label in range(len(np.unique(labels))):
             print(f"Processing label {label}.")
             # Filter voxels by label
@@ -113,17 +113,17 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
 
             pixel_list = []
             for voxel in voxels_person_roi:
-                #pixel = lookup_table_selected_camera.get(tuple(voxel), None)
-                pixel = lookup_table_every_camera[i+1].get(tuple(voxel), None)
+                # pixel = lookup_table_selected_camera.get(tuple(voxel), None)
+                pixel = lookup_table_every_camera[i + 1].get(tuple(voxel), None)
 
                 if pixel:
                     pixel_list.append(pixel)
                     new_voxel_list.append(voxel)
-            
+
                     new_color = get_colour(label)
                     new_colors.append(new_color)
-                    #new_colors.append(np.array(new_color,dtype= np.float32))
-                    
+                    # new_colors.append(np.array(new_color,dtype= np.float32))
+
             print(f"Label {label}: Found {len(pixel_list)} corresponding pixels in lookup table.")
 
             if len(pixel_list) > 0:
@@ -131,24 +131,16 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
                 roi = np.array([frame[y, x] for x, y in pixel_list])
                 roi = np.float32(roi)
 
-                # Create and train the GMM (EM) model
-                model = GaussianMixture(n_components=4, covariance_type='full',random_state=42)
-                model.fit(roi[:, :2])  # Fit to the H and S channels
+                model = cv.ml.EM_create()
+                model.setClustersNumber(4)
+
+                model.trainEM(roi)
                 print(f"Successfully trained GMM model for label {label}.")
 
                 # Store the GMM model
                 colors.append(model)
 
 
-                #TODO: Do not know yet if it is useful
-                num_components = model.n_components
-                mean_color_cluster = []
-                for component in range(num_components):
-                    mean_color = model.means_[component]
-                    mean_color_three = np.append(mean_color,255) # It has 2 channels
-                    mean_color_cluster.append(mean_color_three)
-
-                    
             else:
                 print(f"Not enough pixels to train GMM model for label {label}, skipping.")
                 colors.append(None)
@@ -158,10 +150,7 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
         color_models.append(colors)
         pixel_label_list_cameras.append(pixel_label_list)
 
-
-
     return new_voxel_list, new_colors, color_models, pixel_label_list_cameras
-
 
     """for i in range(len(new_colors)):
             color = new_colors[i]
@@ -177,6 +166,7 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
                 new_colors[i] = mean_color_cluster[3]
     """
 
+
 def paint_image(image, pixel_list):
     colors = [
         (0, 0, 255),  # Red
@@ -189,13 +179,22 @@ def paint_image(image, pixel_list):
         for pixel in pixels:
             x, y = pixel
             image_aux[y, x] = color
-    cv.imshow('Painted Image in offline', image_aux)
-    cv.imshow('Image normal', image)
+    #cv.imshow('Painted Image in offline', image_aux)
+    #cv.imshow('Image normal', image)
 
-    cv.waitKey(0)
+    #cv.waitKey(0)
 
 
-
+def get_colour(label):
+    # TODO: is it good?
+    if label == 0:
+        return [0, 0, 255]
+    elif label == 1:
+        return [0, 255, 0]
+    elif label == 2:
+        return [255, 0, 0]
+    elif label == 3:
+        return [255, 255, 0]
 
 
 def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera):
@@ -204,16 +203,18 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
 
     labels, centers = clustering(voxels_filtered)
 
-    new_voxel_list, new_colors, color_models, pixel_label_list_cameras = construct_color_model(voxels_filtered, labels, centers, lookup_table_every_camera, frames_cam)
+    new_voxel_list, new_colors, color_models, pixel_label_list_cameras = construct_color_model(voxels_filtered, labels,
+                                                                                               centers,
+                                                                                               lookup_table_every_camera,
+                                                                                               frames_cam)
 
     selected_camera_aux = 1
     paint_image(frames_cam[selected_camera_aux], pixel_label_list_cameras[selected_camera_aux])
     return new_voxel_list, new_colors, color_models
 
 
-
-def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time, debug= True) :
-    print("---Online phase--->", " Time: ",curr_time)
+def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time, debug=True):
+    print("---Online phase--->", " Time: ", curr_time)
     voxels_filtered, _ = remove_outliers_iqr(np.array(voxel_list))
 
     labels, centers = clustering(voxels_filtered)
@@ -223,26 +224,28 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
 
     calculated_labes = [None, None, None, None]
     new_voxel_list = []
-    number_voxels_label = [None, None, None, None]
+    final_voxel_list = []
+    number_voxels_label = []
     new_colors = []
     labels = np.ravel(labels)
 
-    for i in range(4): 
-        print(f"Camera {i+1}")
+    for i in range(4):
+        print(f"Camera {i + 1}")
         probabilities_labels = []
         aux_pixel_list = []
+        index = int(curr_time/5)
 
+        print(index, "..", curr_time, "..", len(frames[i]))
+        frame = cv.cvtColor(frames[i][index], cv.COLOR_BGR2HSV)
+        #cv.imshow(f"camera {i + 1} in online", frame)
 
-
-        frame = cv.cvtColor(frames[i][curr_time], cv.COLOR_BGR2HSV)
-        cv.imshow(f"camera {i+1} in online",frame)
 
         for label in range(len(np.unique(labels))):
             print(f"Label {label}")
             # voxels that have this label
             label_voxel = []
-            
-            #print(voxels_filtered.shape, " -- ", len(labels))
+
+            # print(voxels_filtered.shape, " -- ", len(labels))
             voxels_person = np.array(voxels_filtered)[labels == label]
 
             # Calculate the 't-shirt' and 'head' cutoffs
@@ -255,8 +258,8 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
             pixel_list = []
             auxiliar_number_voxels_label = 0
             for voxel in voxels_person_roi:
-                #pixel = lookup_table_selected_camera.get(tuple(voxel), None)
-                pixel = lookup_table_every_camera[i+1].get(tuple(voxel), None)
+                # pixel = lookup_table_selected_camera.get(tuple(voxel), None)
+                pixel = lookup_table_every_camera[i + 1].get(tuple(voxel), None)
 
                 if pixel:
                     pixel_list.append(pixel)
@@ -265,50 +268,76 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                     if i == 0:
                         new_voxel_list.append(voxel)
                         auxiliar_number_voxels_label += 1
-                        #TODO: delete, just beffore obtaining real colors
+                        # TODO: delete, just beffore obtaining real colors
                         new_color = get_colour(label)
                         new_colors.append(new_color)
 
-
             aux_pixel_list.append(pixel_list)
-            number_voxels_label[i] = auxiliar_number_voxels_label
+            if i == 0:
+                number_voxels_label.append(auxiliar_number_voxels_label)
+
             # first part of online - match colour with cluster
             probabilities = []
             # for each cluster:  len of color models of camera i
             for j in range(len(colors_model[i])):
-                roi = np.array([frame[y, x][:2] for x, y in pixel_list])
+                roi = np.array([frame[y, x] for x, y in pixel_list])
                 roi = np.float32(roi)
                 total_prob = 0
                 for sample in roi:
-                    #print(sample)
+                    # print(sample)
                     # we have 1d array and we need a 2d array
-                    sample_2d = sample.reshape(1, -1)
+                    """sample_2d = sample.reshape(1, -1)
+                    sample_aux = sample.reshape(1, 2)
+
                     #print("AFTER 2D",sample_2d)
-                    prob = colors_model[i][j].predict_proba(sample_2d)
+                    print(sample_2d.shape, " - ", sample.shape, "--", sample_aux.shape)"""
+                    (prob, _), _ = colors_model[i][j].predict2(sample)
                     total_prob += prob
                 probabilities.append(total_prob)
             probabilities_labels.append(probabilities)
 
         # match person and colour
-        #3 ERROR: SAMPLE2D, PREDICTPROBA OR FLATTENED SHAPE
+        # 3 ERROR: SAMPLE2D, PREDICTPROBA OR FLATTENED SHAPE
         # Concatenate inner lists for each camera
         probabilities_array = np.array(probabilities_labels)
-        #print(probabilities_array)
-        flattened_shape = (4 * 4, -1) # 4 cameras x 4 clusters
-        flattened_probabilities_array = probabilities_array.reshape(flattened_shape)
-        #print(flattened_probabilities_array)
+        # print(probabilities_array)
+        # flattened_shape = (4 * 4, -1) # 4 cameras x 4 clusters
+        # flattened_probabilities_array = probabilities_array.reshape(flattened_shape)
+        # print(flattened_probabilities_array)
         # Apply linear sum assignment
-        _, new_labels = linear_sum_assignment(flattened_probabilities_array)
+        _, new_labels = linear_sum_assignment(probabilities_array)
         calculated_labes[i] = new_labels.tolist()
-        print("Camera i:  ........................................................ ",calculated_labes)
-   
-   
-   
-   # Camera i:  ........................................................  [[2, 3, 0, 1], [3, 2, 1, 0], [1, 3, 0, 2], [3, 2, 0, 1]]
+        print("Camera i:  ........................................................ ", calculated_labes)
+
+
+        # see decision of each camera:
+        if i == 0:
+            index = int(curr_time / 5)
+            frame_aux = frames[i][index]
+            labels_from_this_cam = calculated_labes[i]
+            reordered_list = [aux_pixel_list[label] for label in labels_from_this_cam]
+            final_colors = []
+            cont = 0
+            # 3 2 01
+            aux_cont = 0
+            while cont < number_voxels_label[3]:
+
+                new_decision_label = labels_from_this_cam[aux_cont]
+                aux_color = get_colour(new_decision_label)
+                final_colors.append(aux_color)
+                if cont == number_voxels_label[aux_cont]:
+                    aux_cont += 1
+                cont += 1
+
+            paint_image(frame_aux, reordered_list)
+
+    print("Camera i:   ", calculated_labes, " in time: ", curr_time)
+
+    # Camera i:  ........................................................  [[2, 3, 0, 1], [3, 2, 1, 0], [1, 3, 0, 2], [3, 2, 0, 1]]
     if debug:
 
         with open('debug.txt', 'w') as f:
-            
+
             f.write("Probaiblities:\n")
             for p in probabilities_labels:
                 f.write("camera i::\n")
@@ -326,12 +355,12 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                 f.write("\n")
 
     # Assign colour
-                
+
     cluster_asssigned = 0
     # just trust camera 2
     final_labels = calculated_labes[1]
     final_colors = []
-    #for label in labels:
+    # for label in labels:
 
     # Assuming 'centers' is a list of cluster centroids from the current frame
     # and 'final_labels' contains the index of the person each cluster is matched to
@@ -342,9 +371,11 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
 
     return new_voxel_list, new_colors
 
-#[[3, 2, 0, 1], [0, 2, 1, 3], [1, 0, 2, 3], [3, 0, 2, 1]]
-#[[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
-#[[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
+
+
+# [[3, 2, 0, 1], [0, 2, 1, 3], [1, 0, 2, 3], [3, 0, 2, 1]]
+# [[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
+# [[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
 
 def interpolate_path(path):
     # Interpolate the points using a cubic spline interpolation
@@ -371,17 +402,15 @@ def interpolate_path(path):
 
 def plot_trajectories(trajectory_data):
     plt.figure(figsize=(10, 6))
-    for person_id in sorted(set(data[0] for data in trajectory_data)):
-        # Extract all positions for this person
-        path = [(data[1], data[2]) for data in trajectory_data if data[0] == person_id]
+    for person_id in set(data[0] for data in trajectory_data):
+        # Extract x and y positions for this person across frames
+        x_positions = [data[2] for data in trajectory_data if data[0] == person_id]
+        y_positions = [data[3] for data in trajectory_data if data[0] == person_id]
 
-        # Handle the case where there's only one position
-        if len(path) == 1:
-            plt.plot(path[0][0], path[0][1], 'o', label=f'Person {person_id}')
-        else:
-            # Interpolate the path to create a smooth trajectory
-            x_new, y_new = interpolate_path(path)
-            plt.plot(x_new, y_new, label=f'Person {person_id}')
+        # Ensure y_positions are flipped if necessary to match the plotting coordinate system
+        y_positions = [max(y_positions) - y for y in y_positions]
+
+        plt.plot(x_positions, y_positions, marker='o', label=f'Person {person_id}')
 
     plt.xlabel('X Position')
     plt.ylabel('Y Position')
@@ -389,19 +418,20 @@ def plot_trajectories(trajectory_data):
     plt.legend()
     plt.show()
 
+
 '''
 
 def plot_trajectories(trajectory_data):
     import matplotlib.pyplot as plt
-    
+
     plt.figure(figsize=(10, 6))
     for person_id in set(data[0] for data in trajectory_data):
         # Extract x and y positions for this person across frames
         x_positions = [data[1] for data in trajectory_data if data[0] == person_id]
         y_positions = [data[2] for data in trajectory_data if data[0] == person_id]
-        
+
         plt.plot(x_positions, y_positions, marker='o', label=f'Person {person_id}')
-    
+
     plt.xlabel('X Position')
     plt.ylabel('Y Position')
     plt.title('Trajectories of People Over Time')
@@ -412,10 +442,3 @@ def plot_trajectories(trajectory_data):
 plot_trajectories(trajectory_data)
 
 '''
-
-
-
-
-    
-            
-

@@ -5,6 +5,7 @@ import cv2 as cv
 from color_model import color_model, online_phase, plot_trajectories, trajectory_data
 
 
+
 class ColorModel:
     colormodel = None
 
@@ -68,6 +69,7 @@ def set_voxel_positions(width, height, depth, curr_time):
         # Alex: Check - select a determined number of dataframe, should be okay
         frame_number = 10   
         camera_handles[i_camera].set(cv.CAP_PROP_POS_FRAMES, frame_number - 1)
+        #camera_handles[i_camera].set(cv.CAP_PROP_POS_FRAMES, frame_number)
 
         # read frame
         ret, image = camera_handles[i_camera].read()
@@ -132,7 +134,8 @@ def set_voxel_positions(width, height, depth, curr_time):
     new_voxel_list, new_colors = online_phase(ColorModel.colormodel, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
 
     print("i ran")
-    plot_trajectories(trajectory_data)
+    if curr_time == 50:
+        plot_trajectories(trajectory_data)
     print("Min height in voxel_list:", np.min(voxel_list))
     print("Max height in voxel_list:", np.max(voxel_list))
     return new_voxel_list, new_colors
