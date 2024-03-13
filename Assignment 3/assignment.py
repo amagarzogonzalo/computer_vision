@@ -66,7 +66,6 @@ def set_voxel_positions(width, height, depth, curr_time):
             camera_handles.append(cv.VideoCapture(path_name + '/video.avi'))
             num_frames = int(camera_handles[i_camera].get(cv.CAP_PROP_FRAME_COUNT))
         
-        # Alex: Check - select a determined number of dataframe, should be okay
         frame_number = 10   
         camera_handles[i_camera].set(cv.CAP_PROP_POS_FRAMES, frame_number - 1)
         #camera_handles[i_camera].set(cv.CAP_PROP_POS_FRAMES, frame_number)
@@ -122,10 +121,11 @@ def set_voxel_positions(width, height, depth, curr_time):
                     lookup_table_selected_camera[tuple(voxel)] = (projection_x, projection_y)
                     # for every camera
                     for i in range(4):
+                        # code for the choice - we store lookuptable for every camera
                         new_value = {tuple(voxel): (projection_x, projection_y)}
                         lookup_table_every_camera[i+1].update(new_value)
 
-
+    # we make just one time the offline
     if curr_time == 0:
         new_voxel_list, new_colors, colors_model =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
         ColorModel.colormodel = colors_model
@@ -133,11 +133,11 @@ def set_voxel_positions(width, height, depth, curr_time):
 
     new_voxel_list, new_colors = online_phase(ColorModel.colormodel, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
 
-    print("i ran")
+    #print("i ran")
     if curr_time == 50:
         plot_trajectories(trajectory_data)
-    print("Min height in voxel_list:", np.min(voxel_list))
-    print("Max height in voxel_list:", np.max(voxel_list))
+    #print("Min height in voxel_list:", np.min(voxel_list))
+    #print("Max height in voxel_list:", np.max(voxel_list))
     return new_voxel_list, new_colors
 
     return voxel_list, colors
