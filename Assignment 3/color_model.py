@@ -131,22 +131,14 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
                 roi = np.array([frame[y, x] for x, y in pixel_list])
                 roi = np.float32(roi)
 
-                # Create and train the GMM (EM) model
-                model = GaussianMixture(n_components=4, covariance_type='full',random_state=42)
-                model.fit(roi[:, :2])  # Fit to the H and S channels
+                model = cv.ml.EM_create()
+                model.setClustersNumber(4)
+
+                model.trainEM(roi)
                 print(f"Successfully trained GMM model for label {label}.")
 
                 # Store the GMM model
                 colors.append(model)
-
-
-                #TODO: Do not know yet if it is useful
-                num_components = model.n_components
-                mean_color_cluster = []
-                for component in range(num_components):
-                    mean_color = model.means_[component]
-                    mean_color_three = np.append(mean_color,255) # It has 2 channels
-                    mean_color_cluster.append(mean_color_three)
 
                     
             else:
@@ -195,6 +187,16 @@ def paint_image(image, pixel_list):
     cv.waitKey(0)
 
 
+def get_colour (label):
+    #TODO: is it good? 
+    if label == 0:
+        return [0,0,255]
+    elif label == 1:
+        return [0,255,0]
+    elif label == 2:
+        return [255,0,0]
+    elif label == 3:
+        return [255,255,0]
 
 
 
@@ -276,15 +278,18 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
             probabilities = []
             # for each cluster:  len of color models of camera i
             for j in range(len(colors_model[i])):
-                roi = np.array([frame[y, x][:2] for x, y in pixel_list])
+                roi = np.array([frame[y, x] for x, y in pixel_list])
                 roi = np.float32(roi)
                 total_prob = 0
                 for sample in roi:
                     #print(sample)
                     # we have 1d array and we need a 2d array
-                    sample_2d = sample.reshape(1, -1)
+                    """sample_2d = sample.reshape(1, -1)
+                    sample_aux = sample.reshape(1, 2)
+
                     #print("AFTER 2D",sample_2d)
-                    prob = colors_model[i][j].predict_proba(sample_2d)
+                    print(sample_2d.shape, " - ", sample.shape, "--", sample_aux.shape)"""
+                    (prob, _), _  = colors_model[i][j].predict2(sample)
                     total_prob += prob
                 probabilities.append(total_prob)
             probabilities_labels.append(probabilities)
@@ -294,15 +299,23 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
         # Concatenate inner lists for each camera
         probabilities_array = np.array(probabilities_labels)
         #print(probabilities_array)
-        flattened_shape = (4 * 4, -1) # 4 cameras x 4 clusters
-        flattened_probabilities_array = probabilities_array.reshape(flattened_shape)
+        #flattened_shape = (4 * 4, -1) # 4 cameras x 4 clusters
+        #flattened_probabilities_array = probabilities_array.reshape(flattened_shape)
         #print(flattened_probabilities_array)
         # Apply linear sum assignment
-        _, new_labels = linear_sum_assignment(flattened_probabilities_array)
+        _, new_labels = linear_sum_assignment(probabilities_array)
         calculated_labes[i] = new_labels.tolist()
         print("Camera i:  ........................................................ ",calculated_labes)
-   
-   
+
+        # see decision of each camera:
+        if i == 1:
+            frame_aux = frames[i][curr_time]
+            labels_from_this_cam = calculated_labes[i]
+            reordered_list = [aux_pixel_list[label] for label in labels_from_this_cam]
+            paint_image(frame_aux, reordered_list)
+        
+
+    print("Camera i:   ",calculated_labes, " in time: ", curr_time)
    
    # Camera i:  ........................................................  [[2, 3, 0, 1], [3, 2, 1, 0], [1, 3, 0, 2], [3, 2, 0, 1]]
     if debug:
