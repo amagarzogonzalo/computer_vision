@@ -228,7 +228,6 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
     new_colors = []
     labels = np.ravel(labels)
 
-   
     for i in range(4): 
         print(f"Camera {i+1}")
         probabilities_labels = []
@@ -282,17 +281,17 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                 roi = np.float32(roi)
                 total_prob = 0
                 for sample in roi:
-                    #print(sample)
+                    print(sample)
                     # we have 1d array and we need a 2d array
                     sample_2d = sample.reshape(1, -1)
-                    #print(sample_2d)
+                    print("AFTER 2D",sample_2d)
                     prob = colors_model[i][j].predict_proba(sample_2d)
                     total_prob += prob
                 probabilities.append(total_prob)
             probabilities_labels.append(probabilities)
 
         # match person and colour
-
+        #3 ERROR: SAMPLE2D, PREDICTPROBA OR FLATTENED SHAPE
         # Concatenate inner lists for each camera
         probabilities_array = np.array(probabilities_labels)
         #print(probabilities_array)
@@ -330,10 +329,12 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
     # Assign colour
                 
     cluster_asssigned = 0
-    while cluster_asssigned < 4:
+    # just trust camera 2
+    final_labels = calculated_labes[1]
+    final_colors = []
+    #for label in labels:
 
 
-        cluster_asssigned+=1
 
     return new_voxel_list, new_colors
 

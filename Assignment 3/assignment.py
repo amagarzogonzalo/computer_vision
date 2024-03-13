@@ -4,6 +4,10 @@ import numpy as np
 import cv2 as cv
 from color_model import color_model, online_phase
 
+
+class ColorModel:
+    colormodel = None
+
 # global variables
 block_size = 1.0
 voxel_size = 30.0   # voxel every 3cm
@@ -21,7 +25,6 @@ def generate_grid(width, depth):
             colors.append([1.0, 1.0, 1.0] if (x + z) % 2 == 0 else [0, 0, 0])
     return data, colors
 
-global make_first_offline 
 global colors_model
 
 # determines which voxels should be set
@@ -29,7 +32,6 @@ def set_voxel_positions(width, height, depth, curr_time):
     testing = False
     if len(lookup_table) == 0:
         create_lookup_table(width, height, depth)
-        make_first_offline = True
 
     # initialize voxel list
     voxel_list = []
@@ -121,12 +123,12 @@ def set_voxel_positions(width, height, depth, curr_time):
                         lookup_table_every_camera[i+1].update(new_value)
 
 
-    if make_first_offline:
+    if curr_time == 0:
         new_voxel_list, new_colors, colors_model =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
-        make_first_offline = False
+        ColorModel.colormodel = colors_model
     
 
-    new_voxel_list, new_colors = online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
+    new_voxel_list, new_colors = online_phase(ColorModel.colormodel, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
 
     print("i ran")
     print("Min height in voxel_list:", np.min(voxel_list))
