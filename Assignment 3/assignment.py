@@ -21,11 +21,12 @@ def generate_grid(width, depth):
             colors.append([1.0, 1.0, 1.0] if (x + z) % 2 == 0 else [0, 0, 0])
     return data, colors
 
+global make_first_offline 
+global colors_model
 
 # determines which voxels should be set
 def set_voxel_positions(width, height, depth, curr_time):
     testing = False
-    make_first_offline = False
     if len(lookup_table) == 0:
         create_lookup_table(width, height, depth)
         make_first_offline = True
@@ -123,7 +124,7 @@ def set_voxel_positions(width, height, depth, curr_time):
     if make_first_offline:
         new_voxel_list, new_colors, colors_model =  color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_camera, lookup_table_every_camera)
         make_first_offline = False
-
+    
 
     new_voxel_list, new_colors = online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
 

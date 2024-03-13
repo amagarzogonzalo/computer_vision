@@ -54,7 +54,7 @@ def remove_outliers_iqr(voxel_list):
 
 
 
-def clustering(voxel_list, N=4, debug = False):
+def clustering(voxel_list, N=4, debug = True):
     voxel_list = np.array(voxel_list).astype(np.float32)[:, [0, 2]]
 
     criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 1.0)
@@ -214,28 +214,37 @@ def color_model(voxel_list, frames_cam, lookup_table_selected_camera, selected_c
 
 
 def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera, curr_time, debug= True) :
-    print("---Online phase---")
+    print("---Online phase--->", " Time: ",curr_time)
     voxels_filtered, _ = remove_outliers_iqr(np.array(voxel_list))
 
     labels, centers = clustering(voxels_filtered)
+    voxels_filtered = np.float32(voxels_filtered)
 
     frames = read_all_frames()
 
-    probabilities_labels = []
     calculated_labes = [None, None, None, None]
     new_voxel_list = []
     number_voxels_label = [None, None, None, None]
     new_colors = []
-     
+    labels = np.ravel(labels)
+
    
     for i in range(4): 
+        print(f"Camera {i+1}")
+        probabilities_labels = []
+        aux_pixel_list = []
+
+
+
         frame = cv.cvtColor(frames[i][curr_time], cv.COLOR_BGR2HSV)
-        labels = np.ravel(labels)
+        cv.imshow(f"camera {i+1} in online",frame)
 
         for label in range(len(np.unique(labels))):
+            print(f"Label {label}")
             # voxels that have this label
             label_voxel = []
-
+            
+            #print(voxels_filtered.shape, " -- ", len(labels))
             voxels_person = np.array(voxels_filtered)[labels == label]
 
             # Calculate the 't-shirt' and 'head' cutoffs
@@ -263,7 +272,7 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                         new_colors.append(new_color)
 
 
-
+            aux_pixel_list.append(pixel_list)
             number_voxels_label[i] = auxiliar_number_voxels_label
             # first part of online - match colour with cluster
             probabilities = []
@@ -280,13 +289,24 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                     prob = colors_model[i][j].predict_proba(sample_2d)
                     total_prob += prob
                 probabilities.append(total_prob)
-        probabilities_labels.append(probabilities)
+            probabilities_labels.append(probabilities)
+
         # match person and colour
 
-        print(np.array(probabilities_labels))
-        _, labels = optimize.linear_sum_assignment(np.array(probabilities_labels))
-        calculated_labes[i] = labels.tolist()
+        # Concatenate inner lists for each camera
+        probabilities_array = np.array(probabilities_labels)
+        #print(probabilities_array)
+        flattened_shape = (4 * 4, -1) # 4 cameras x 4 clusters
+        flattened_probabilities_array = probabilities_array.reshape(flattened_shape)
+        #print(flattened_probabilities_array)
+        # Apply linear sum assignment
+        _, new_labels = linear_sum_assignment(flattened_probabilities_array)
+        calculated_labes[i] = new_labels.tolist()
         print("Camera i:  ........................................................ ",calculated_labes)
+   
+   
+   
+   # Camera i:  ........................................................  [[2, 3, 0, 1], [3, 2, 1, 0], [1, 3, 0, 2], [3, 2, 0, 1]]
     if debug:
 
         with open('debug.txt', 'w') as f:
