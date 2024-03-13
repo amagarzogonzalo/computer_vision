@@ -2,11 +2,12 @@ import glm
 import random
 import numpy as np
 import cv2 as cv
-from color_model import color_model, online_phase
+from color_model import color_model, online_phase, plot_trajectories, trajectory_data
 
 
 class ColorModel:
     colormodel = None
+
 
 # global variables
 block_size = 1.0
@@ -131,6 +132,7 @@ def set_voxel_positions(width, height, depth, curr_time):
     new_voxel_list, new_colors = online_phase(ColorModel.colormodel, voxel_list, frames_cam, lookup_table_every_camera, curr_time)
 
     print("i ran")
+    plot_trajectories(trajectory_data)
     print("Min height in voxel_list:", np.min(voxel_list))
     print("Max height in voxel_list:", np.max(voxel_list))
     return new_voxel_list, new_colors

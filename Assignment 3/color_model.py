@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy import optimize
 from scipy.interpolate import interp1d
 
-
+trajectory_data = []
 
 def read_all_frames(duration_video_secs= 53, total_frames_camera_i=10):
     # frames for all cameras
@@ -132,7 +132,7 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
                 roi = np.float32(roi)
 
                 # Create and train the GMM (EM) model
-                model = GaussianMixture(n_components=4, covariance_type='full')
+                model = GaussianMixture(n_components=4, covariance_type='full',random_state=42)
                 model.fit(roi[:, :2])  # Fit to the H and S channels
                 print(f"Successfully trained GMM model for label {label}.")
 
@@ -176,7 +176,6 @@ def construct_color_model(voxel_list, labels, centers, lookup_table_every_camera
             elif color == [255,255,0]:
                 new_colors[i] = mean_color_cluster[3]
     """
-
 
 def paint_image(image, pixel_list):
     colors = [
@@ -281,10 +280,10 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
                 roi = np.float32(roi)
                 total_prob = 0
                 for sample in roi:
-                    print(sample)
+                    #print(sample)
                     # we have 1d array and we need a 2d array
                     sample_2d = sample.reshape(1, -1)
-                    print("AFTER 2D",sample_2d)
+                    #print("AFTER 2D",sample_2d)
                     prob = colors_model[i][j].predict_proba(sample_2d)
                     total_prob += prob
                 probabilities.append(total_prob)
@@ -334,9 +333,87 @@ def online_phase(colors_model, voxel_list, frames_cam, lookup_table_every_camera
     final_colors = []
     #for label in labels:
 
-
+    # Assuming 'centers' is a list of cluster centroids from the current frame
+    # and 'final_labels' contains the index of the person each cluster is matched to
+    for i, center in enumerate(centers):
+        person_id = final_labels[i]  # Get the matched person ID for this cluster
+        # Append the person ID, cluster center (x, y), and current frame number
+        trajectory_data.append((person_id, center[0], center[1], curr_time))
 
     return new_voxel_list, new_colors
+
+#[[3, 2, 0, 1], [0, 2, 1, 3], [1, 0, 2, 3], [3, 0, 2, 1]]
+#[[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
+#[[3, 2, 0, 1], [3, 0, 2, 1], [3, 1, 2, 0], [1, 3, 0, 2]]
+
+def interpolate_path(path):
+    # Interpolate the points using a cubic spline interpolation
+    x = np.array([point[0] for point in path])
+    y = np.array([point[1] for point in path])
+
+    # Check if there are at least two data points
+    if len(x) > 1:
+        # It's possible that there are not enough points for cubic interpolation,
+        # In that case, you should fallback to linear interpolation.
+        if len(x) > 3:
+            kind = 'cubic'
+        else:
+            kind = 'linear'
+
+        f = interp1d(x, y, kind=kind, fill_value="extrapolate")
+        x_new = np.linspace(x[0], x[-1], num=len(x) * 10)  # More points for smoother line
+        y_new = f(x_new)
+        return x_new, y_new
+    else:
+        # Not enough points to interpolate, return the original path
+        return x, y
+
+
+def plot_trajectories(trajectory_data):
+    plt.figure(figsize=(10, 6))
+    for person_id in sorted(set(data[0] for data in trajectory_data)):
+        # Extract all positions for this person
+        path = [(data[1], data[2]) for data in trajectory_data if data[0] == person_id]
+
+        # Handle the case where there's only one position
+        if len(path) == 1:
+            plt.plot(path[0][0], path[0][1], 'o', label=f'Person {person_id}')
+        else:
+            # Interpolate the path to create a smooth trajectory
+            x_new, y_new = interpolate_path(path)
+            plt.plot(x_new, y_new, label=f'Person {person_id}')
+
+    plt.xlabel('X Position')
+    plt.ylabel('Y Position')
+    plt.title('Trajectories of People Over Time')
+    plt.legend()
+    plt.show()
+
+'''
+
+def plot_trajectories(trajectory_data):
+    import matplotlib.pyplot as plt
+    
+    plt.figure(figsize=(10, 6))
+    for person_id in set(data[0] for data in trajectory_data):
+        # Extract x and y positions for this person across frames
+        x_positions = [data[1] for data in trajectory_data if data[0] == person_id]
+        y_positions = [data[2] for data in trajectory_data if data[0] == person_id]
+        
+        plt.plot(x_positions, y_positions, marker='o', label=f'Person {person_id}')
+    
+    plt.xlabel('X Position')
+    plt.ylabel('Y Position')
+    plt.title('Trajectories of People Over Time')
+    plt.legend()
+    plt.show()
+
+# Call this function after processing all frames
+plot_trajectories(trajectory_data)
+
+'''
+
+
 
 
     
