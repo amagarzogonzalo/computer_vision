@@ -92,6 +92,7 @@ def set_voxel_positions(width, height, depth, curr_time):
 
                     projection_x = int(lookup_table[i_camera][voxel_index][0][0])
                     projection_y = int(lookup_table[i_camera][voxel_index][0][1])
+                    # if it is not in foreground then voxel 0
                     if projection_x < 0 or projection_y < 0 or projection_x >= foreground_image.shape[1] or projection_y >= foreground_image.shape[0] or not foreground_image[projection_y, projection_x]:
                         voxel_grid[x, z, y] = 0.0
     colors = []
